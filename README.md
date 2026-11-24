@@ -1,4 +1,4 @@
-# 🏯 Made In Assaí — Aventura por Assaí
+# 🏯 Made In Assaí: Aventura por Assaí
 
 Um jogo de plataforma 2D em **Pixel Art** inspirado nos clássicos retrô, desenvolvido especialmente em homenagem ao município de **Assaí (PR)** e à **Innovation Week**.
 
