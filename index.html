@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Made In Assaí - Aventura por Assaí</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Canvas do Jogo -->
+    <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+    <!-- HUD durante o jogo -->
+    <div id="hud" class="hidden">
+      <div class="hud-item">
+        <span class="hud-label">PONTOS</span>
+        <span id="hud-score">00000</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">SAKURAS</span>
+        <span id="hud-coins">x00</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">FASE</span>
+        <span id="hud-world">1-1</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">VIDAS</span>
+        <span id="hud-lives">x03</span>
+      </div>
+      <button id="btn-mute" class="pixel-btn small-btn" title="Som">🔊</button>
+    </div>
+
+    <!-- Controles Touch para Celular -->
+    <div id="mobile-controls" class="mobile-controls hidden">
+      <div class="mobile-dpad">
+        <button id="btn-left" class="touch-btn" aria-label="Mover para esquerda">◀</button>
+        <button id="btn-right" class="touch-btn" aria-label="Mover para direita">▶</button>
+      </div>
+      <div class="mobile-actions">
+        <button id="btn-jump" class="touch-btn jump-btn" aria-label="Pular">▲</button>
+      </div>
+    </div>
+
+    <!-- Banner de Transição de Fase -->
+    <div id="stage-banner" class="stage-banner hidden">
+      <div class="stage-banner-box">
+        <div id="stage-banner-sub" class="stage-banner-sub">FASE 1-1</div>
+        <div id="stage-banner-title" class="stage-banner-title">AVENIDA DOS IPÊS</div>
+      </div>
+    </div>
+
+    <!-- Tela Inicial Estilo RPG Pixel Art -->
+    <div id="menu-screen" class="title-overlay">
+      <!-- Barra superior com as logos oficiais -->
+      <div class="top-logos-bar">
+        <img src="assets/logo-assai.png" alt="Assaí Governo Municipal" class="logo-img" />
+        <div class="logo-divider"></div>
+        <img src="assets/logo-innovation-week.png" alt="Innovation Week Assaí" class="logo-img logo-iw" />
+      </div>
+
+      <!-- Centro: Medalhão Sora + Título Ornamentado + Medalhão Riku -->
+      <div class="title-hero">
+        <button class="medallion-btn selected" data-char="male" id="select-male" title="Escolher Sora">
+          <div class="medallion-ring">
+            <img src="assets/portrait-sora.png" alt="Sora" class="medallion-img" />
+          </div>
+          <span class="medallion-name">SORA</span>
+        </button>
+
+        <div class="title-center">
+          <div class="title-badge">MADE IN ASSAÍ</div>
+          <h1 class="rpg-title">AVENTURA<br />POR ASSAÍ</h1>
+          <div class="rpg-subtitle">SORA &amp; RIKU</div>
+        </div>
+
+        <button class="medallion-btn" data-char="female" id="select-female" title="Escolher Riku">
+          <div class="medallion-ring">
+            <img src="assets/portrait-riku.png" alt="Riku" class="medallion-img" />
+          </div>
+          <span class="medallion-name">RIKU</span>
+        </button>
+      </div>
+
+      <!-- Ação principal e controles -->
+      <div class="title-footer">
+        <p class="pick-hint">CLIQUE NO PERSONAGEM E INICIE SUA JORNADA</p>
+        <button id="btn-start" class="rpg-start-btn">
+          <span class="fan-icon">🪭</span> INICIAR JOGO
+        </button>
+        <div class="controls-hint">
+          <span>⬅️ ➡️ ou A / D: Mover</span>
+          <span>⬆️ ou Espaço / W: Pular</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Caixa de Diálogo Estilo RPG (Quebra da 4ª Parede) -->
+    <div id="dialogue-box" class="dialogue-overlay hidden">
+      <div class="rpg-dialogue-card">
+        <div class="dialogue-medallion">
+          <img id="dialogue-avatar-img" src="assets/portrait-sora.png" alt="Personagem" class="medallion-img" />
+        </div>
+        <div class="dialogue-content">
+          <div id="dialogue-speaker" class="dialogue-speaker">SORA</div>
+          <p id="dialogue-text" class="dialogue-text"></p>
+          <div class="dialogue-actions">
+            <button id="btn-dialogue-ok" class="rpg-start-btn small-rpg-btn">BORA AJUDAR! ▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela de Vitória / Game Over -->
+    <div id="end-screen" class="overlay hidden">
+      <div class="rpg-end-card">
+        <h2 id="end-title" class="rpg-title end-title">PARABÉNS!</h2>
+        <p id="end-message" class="end-message">Você chegou ao Castelo Japonês de Assaí!</p>
+        <p class="final-score">PONTUAÇÃO: <span id="final-score-val">0</span></p>
+        <div class="end-buttons">
+          <button id="btn-restart" class="rpg-start-btn small-rpg-btn">JOGAR NOVAMENTE</button>
+          <button id="btn-menu" class="pixel-btn secondary-btn">TELA INICIAL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sprites.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
