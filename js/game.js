@@ -817,25 +817,31 @@ function drawBushes(scroll, color) {
   }
 }
 
-// Laguinho do Parque Ikeda: Torii iluminado na água e ponte apoiada sobre o lago
+// Laguinho do Parque Ikeda: Torii iluminado na água e reflexos (sem ponte)
 function drawLake(cam) {
   const top = 152;
   const bands = ['#6b4f9e', '#53418f', '#3f3480', '#2e2a6e'];
   const bh = Math.ceil((GY - top) / bands.length);
   bands.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, top + i * bh, W, bh); });
-  // margem ao fundo
-  ctx.fillStyle = '#2f4a2c'; ctx.fillRect(0, top - 2, W, 2);
-  ctx.fillStyle = '#3b5e36'; for (let x = 0; x < W; x += 6) ctx.fillRect(x, top - 4, 4, 2);
 
-  const o = -((cam * 0.4) % 384);
+  // margem arborizada ao fundo com paralaxe própria
+  const bankOff = -((cam * 0.38) % 24);
+  ctx.fillStyle = '#253d24'; ctx.fillRect(0, top - 2, W, 2);
+  ctx.fillStyle = '#345630';
+  for (let x = Math.floor(bankOff) - 24; x < W + 24; x += 12) {
+    ctx.fillRect(x, top - 5, 8, 3);
+    ctx.fillRect(x + 2, top - 7, 4, 2);
+  }
+
+  const o = -((cam * 0.48) % 384);
   for (const rep of [0, 384]) {
     const base = Math.floor(o + rep);
     // Torii vermelho no lago
-    const tx = base + 110;
+    const tx = base + 140;
     if (tx > -60 && tx < W + 60) {
-      const glow = ctx.createRadialGradient(tx, top - 6, 2, tx, top - 6, 34);
-      glow.addColorStop(0, 'rgba(255,90,60,0.45)'); glow.addColorStop(1, 'rgba(255,90,60,0)');
-      ctx.fillStyle = glow; ctx.fillRect(tx - 34, top - 40, 68, 70);
+      const glow = ctx.createRadialGradient(tx, top - 6, 2, tx, top - 6, 36);
+      glow.addColorStop(0, 'rgba(255,90,60,0.48)'); glow.addColorStop(1, 'rgba(255,90,60,0)');
+      ctx.fillStyle = glow; ctx.fillRect(tx - 36, top - 42, 72, 74);
       ctx.fillStyle = '#ff3b2f'; ctx.fillRect(tx - 10, top - 24, 2, 28); ctx.fillRect(tx + 8, top - 24, 2, 28);
       ctx.fillRect(tx - 12, top - 19, 24, 2);
       ctx.fillStyle = '#ff6a3d'; ctx.fillRect(tx - 15, top - 26, 30, 3);
@@ -846,44 +852,74 @@ function drawLake(cam) {
       // reflexo tremulando
       for (let r = 0; r < 12; r++) {
         const wave = Math.round(Math.sin(frame * 0.1 + r) * 1.5);
-        ctx.fillStyle = `rgba(255,80,60,${(0.5 - r * 0.035).toFixed(2)})`;
+        ctx.fillStyle = `rgba(255,80,60,${(0.52 - r * 0.036).toFixed(2)})`;
         ctx.fillRect(tx - 12 + wave, top + 4 + r * 2, 24 - r, 1);
       }
     }
-    // Ponte sobre o lago (com pilares mergulhados na água e margens nas pontas)
-    const bx = base + 190, bw = 170;
-    if (bx < W + 10 && bx + bw > -10) {
-      ctx.fillStyle = '#2f4a2c'; ctx.fillRect(bx - 10, top - 3, 12, 6); ctx.fillRect(bx + bw - 2, top - 3, 12, 6);
-      ctx.fillStyle = '#d6dde6'; ctx.fillRect(bx, top - 7, bw, 2);
-      ctx.fillStyle = '#9aa6b5'; ctx.fillRect(bx, top - 5, bw, 1);
-      ctx.fillStyle = '#c3ccd8'; ctx.fillRect(bx, top - 11, bw, 1);
-      for (let i = 0; i <= bw; i += 14) {
-        ctx.fillStyle = '#c3ccd8'; ctx.fillRect(bx + i, top - 11, 1, 4);
-        ctx.fillStyle = '#6b7686'; ctx.fillRect(bx + i, top - 4, 2, 9);
-        ctx.fillStyle = '#fde68a'; ctx.fillRect(bx + i, top - 12, 1, 1);
-        ctx.fillStyle = 'rgba(253,230,138,0.25)'; ctx.fillRect(bx + i, top + 6, 1, 8);
-      }
-    }
   }
-  // brilho da superfície
+  // brilho da superfície com paralaxe mais rápida na água próxima
   ctx.fillStyle = 'rgba(255,200,220,0.35)';
-  for (let i = 0; i < 18; i++) {
-    const x = Math.floor(((i * 41 + frame * 0.3) % (W + 20)) - 10);
-    ctx.fillRect(x, top + 4 + (i % 7) * 4, 5, 1);
+  for (let i = 0; i < 20; i++) {
+    const layerSpeed = 0.5 + (i % 4) * 0.08;
+    const x = Math.floor((((i * 41 - cam * layerSpeed + frame * 0.25) % (W + 24)) + (W + 24)) % (W + 24)) - 12;
+    ctx.fillRect(x, top + 4 + (i % 7) * 4, 6 + (i % 3), 1);
+  }
+}
+
+function drawMidTrees(scroll, color) {
+  const o = ((scroll % 88) + 88) % 88;
+  ctx.fillStyle = color;
+  for (let x = -o - 88; x < W + 88; x += 88) {
+    ctx.fillRect(x + 10, GY - 18, 2, 18);
+    ctx.fillRect(x + 4, GY - 27, 14, 10);
+    ctx.fillRect(x + 7, GY - 30, 8, 3);
+    ctx.fillRect(x + 54, GY - 14, 2, 14);
+    ctx.fillRect(x + 49, GY - 22, 12, 9);
+  }
+}
+
+function drawForegroundGrass(scroll) {
+  const o = ((scroll % 56) + 56) % 56;
+  ctx.fillStyle = theme.bush;
+  for (let x = -o - 56; x < W + 56; x += 56) {
+    ctx.fillRect(x + 4, H - 5, 2, 5);
+    ctx.fillRect(x + 7, H - 7, 2, 7);
+    ctx.fillRect(x + 10, H - 4, 2, 4);
+    ctx.fillRect(x + 34, H - 6, 2, 6);
+    ctx.fillRect(x + 37, H - 4, 2, 4);
   }
 }
 
 function drawBackground() {
   const th = cfg.theme;
   bandedSky(theme.sky);
-  if (th === 'night' || th === 'secret') { drawStars(); drawMoon(330, 34, th === 'secret' ? '#ffe4f1' : '#fef3c7'); }
-  if (th === 'day') { pxCircle(ctx, 330, 30, 13, '#ffe58a'); pxCircle(ctx, 330, 30, 10, '#fff6c4'); }
-  if (th === 'sunset') { pxCircle(ctx, 300, 140, 24, '#ffb36b'); pxCircle(ctx, 300, 140, 19, '#ffd88a'); }
-  if (theme.clouds) drawClouds(camX * 0.08 + frame * 0.04);
-  drawCity(-camX * 0.15, 158, th);
-  drawHills(camX * 0.25, 22, 6, 0.02, theme.hillFar, 1);
-  if (cfg.lake) drawLake(camX);
-  else { drawHills(camX * 0.45, 12, 5, 0.035, theme.hillNear, 3); drawBushes(camX * 0.7, theme.bush); }
+  if (th === 'night' || th === 'secret') {
+    drawStars();
+    drawMoon(Math.round(334 - camX * 0.025), 34, th === 'secret' ? '#ffe4f1' : '#fef3c7');
+  }
+  if (th === 'day') {
+    const sx = Math.round(334 - camX * 0.025);
+    pxCircle(ctx, sx, 30, 13, '#ffe58a'); pxCircle(ctx, sx, 30, 10, '#fff6c4');
+  }
+  if (th === 'sunset') {
+    const sx = Math.round(308 - camX * 0.03);
+    pxCircle(ctx, sx, 140, 24, '#ffb36b'); pxCircle(ctx, sx, 140, 19, '#ffd88a');
+  }
+  if (theme.clouds) {
+    drawClouds(camX * 0.06 + frame * 0.04);
+    drawClouds(camX * 0.14 + frame * 0.08 + 180);
+  }
+  // Camadas de paralaxe progressivas (do mais distante ao mais próximo)
+  drawHills(camX * 0.11, 34, 9, 0.014, theme.hillFar, 0.5);
+  drawCity(-camX * 0.22, 158, th);
+  drawHills(camX * 0.34, 20, 6, 0.024, theme.hillFar, 2.2);
+  if (cfg.lake) {
+    drawLake(camX);
+  } else {
+    drawHills(camX * 0.48, 12, 5, 0.036, theme.hillNear, 3.6);
+    drawMidTrees(camX * 0.60, theme.bush);
+    drawBushes(camX * 0.76, theme.bush);
+  }
 }
 
 function drawGround(cam) {
@@ -1027,6 +1063,7 @@ function drawWorld() {
   }
   ctx.globalAlpha = 1;
   ctx.restore();
+  drawForegroundGrass(camX * 1.22);
   drawPetals();
 }
 
