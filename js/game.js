@@ -414,7 +414,7 @@ function loadStage(id) {
   cfg = STAGES[id];
   theme = THEMES[cfg.theme];
   platforms = cfg.platforms.map((p) => ({ ...p, h: 6, bx: p.x, by: p.y, dx: 0, dy: 0 }));
-  lanterns = cfg.lanterns.map((l) => ({ ...l, w: 10, h: 15, lit: false, golden: !!cfg.golden }));
+  lanterns = cfg.lanterns.map((l) => ({ ...l, w: 12, h: 16, lit: false, golden: !!cfg.golden }));
   enemies = cfg.enemies.map((e) => ({ ...e, y: GY - 10, w: 14, h: 10, dead: false, squash: 0 }));
   flowers = cfg.flowers.map((f) => ({ ...f, got: false }));
   particles = []; popups = [];
@@ -994,15 +994,10 @@ function drawPlatform(p) {
 }
 
 function drawLantern(l) {
-  ctx.fillStyle = '#3f2a1d'; ctx.fillRect(l.x + 4, l.y - 6, 1, 6);
-  if (l.lit) {
-    const r = 20 + Math.sin(frame * 0.15 + l.x) * 2;
-    const g = ctx.createRadialGradient(l.x + 5, l.y + 8, 1, l.x + 5, l.y + 8, r);
-    g.addColorStop(0, 'rgba(255,240,170,0.55)'); g.addColorStop(1, 'rgba(255,150,60,0)');
-    ctx.fillStyle = g; ctx.fillRect(l.x + 5 - r, l.y + 8 - r, r * 2, r * 2);
-    if (frame % 14 === 0) particles.push({ x: l.x + 2 + Math.random() * 6, y: l.y + 6, vx: (Math.random() - 0.5) * 0.2, vy: -0.3, life: 30, max: 30, c: Math.random() > 0.5 ? '#fff1a8' : '#ffffff', s: 1, up: true });
+  if (l.lit && frame % 14 === 0) {
+    particles.push({ x: l.x + 3 + Math.random() * 6, y: l.y + 6, vx: (Math.random() - 0.5) * 0.2, vy: -0.3, life: 30, max: 30, c: Math.random() > 0.5 ? '#fff1a8' : '#ffffff', s: 1, up: true });
   }
-  drawPixelMatrix(ctx, l.lit ? LANTERN_ON : LANTERN_OFF, l.x, l.y, false, l.golden ? GOLD_MAP : null);
+  drawJapaneseLantern(ctx, l.x, l.y, l.lit, frame, l.golden);
 }
 
 function drawGoalPortal(x) {

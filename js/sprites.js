@@ -63,18 +63,84 @@ const BUG_SQUASH = ['..KKKKKKKKKK..', '.KRRYRRRRYRRK.', 'KKKKKKKKKKKKKK', '.K.K.
 const BUG_NIGHT = { _id: 'bn', R: '#7c3aed', Y: '#fde047' };
 const BUG_SUNSET = { _id: 'bs', R: '#ea580c', Y: '#fef08a' };
 
-// ---------- Lanterna japonesa (chōchin 10x15) ----------
-const LANTERN_OFF = [
-  '....KK....', '...KKKK...', '..KyyyyK..', '.KrrrrrrK.', 'KrrrrrrrrK',
-  'KqqqqqqqqK', 'KrrrrrrrrK', 'KrrrqqrrrK', 'KqqqqqqqqK', 'KrrrrrrrrK',
-  '.KrrrrrrK.', '..KyyyyK..', '...KKKK...', '....yy....', '....y.....',
-];
-const LANTERN_ON = [
-  '....KK....', '...KKKK...', '..KYYYYK..', '.KRRRRRRK.', 'KRROOOORRK',
-  'KrrrrrrrrK', 'KROYWWYORK', 'KROYWWYORK', 'KrrrrrrrrK', 'KRROOOORRK',
-  '.KRRRRRRK.', '..KYYYYK..', '...KKKK...', '....YY....', '....Y.....',
-];
-const GOLD_MAP = { _id: 'gold', R: '#f5b301', r: '#b45309', O: '#fff1a8', q: '#78350f' };
+// ---------- Lanterna japonesa (design clássico Chōchin com tampa dourada, corpo oval e núcleo brilhante) ----------
+function drawJapaneseLantern(ctx, x, y, lit, frameCount, golden = false) {
+  const cx = Math.floor(x + 6);
+  const bob = Math.round(Math.sin(frameCount * 0.08 + x) * 1);
+  const topY = Math.floor(y + bob);
+
+  if (lit) {
+    // Halo de luz quente pulsante ao redor da lanterna acesa
+    const pulse = 1 + Math.sin(frameCount * 0.18 + x) * 0.12;
+    const radius = 18 * pulse;
+    const grad = ctx.createRadialGradient(cx, topY + 8, 2, cx, topY + 8, radius);
+    grad.addColorStop(0, 'rgba(255, 245, 157, 0.85)');
+    grad.addColorStop(0.45, 'rgba(251, 146, 60, 0.45)');
+    grad.addColorStop(1, 'rgba(251, 146, 60, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, topY + 8, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Cordinha/suporte superior
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(cx, topY - 2, 1, 3);
+
+  // Tampa superior (madeira escura + detalhe dourado)
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(cx - 3, topY, 7, 2);
+  ctx.fillStyle = '#facc15';
+  ctx.fillRect(cx - 2, topY + 1, 5, 1);
+
+  // Contorno externo do corpo oval da lanterna
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(cx - 5, topY + 2, 11, 11);
+  ctx.fillRect(cx - 6, topY + 4, 13, 7);
+
+  if (!lit) {
+    // Lanterna apagada (vermelho escuro fosco ou dourado escuro na fase secreta)
+    ctx.fillStyle = golden ? '#92400e' : '#7f1d1d';
+    ctx.fillRect(cx - 4, topY + 3, 9, 9);
+    ctx.fillRect(cx - 5, topY + 4, 11, 7);
+    // Sombra/reflexo sutil central
+    ctx.fillStyle = golden ? '#b45309' : '#991b1b';
+    ctx.fillRect(cx - 3, topY + 4, 7, 7);
+    // Gomos horizontais da lanterna
+    ctx.fillStyle = golden ? '#451a03' : '#450a0a';
+    ctx.fillRect(cx - 5, topY + 5, 11, 1);
+    ctx.fillRect(cx - 5, topY + 9, 11, 1);
+  } else {
+    // Lanterna ACESA (vermelho/laranja vibrante + núcleo amarelo/branco brilhante!)
+    ctx.fillStyle = golden ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(cx - 4, topY + 3, 9, 9);
+    ctx.fillRect(cx - 5, topY + 4, 11, 7);
+    // Camada laranja quente
+    ctx.fillStyle = '#fb923c';
+    ctx.fillRect(cx - 3, topY + 4, 7, 7);
+    // Núcleo luminoso amarelo/branco
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(cx - 2, topY + 5, 5, 5);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(cx - 1, topY + 6, 3, 3);
+    // Gomos horizontais iluminados
+    ctx.fillStyle = golden ? '#d97706' : '#b91c1c';
+    ctx.fillRect(cx - 5, topY + 5, 11, 1);
+    ctx.fillRect(cx - 5, topY + 9, 11, 1);
+  }
+
+  // Base inferior da lanterna
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(cx - 3, topY + 13, 7, 2);
+  ctx.fillStyle = '#facc15';
+  ctx.fillRect(cx - 2, topY + 13, 5, 1);
+
+  // Borla (tassel) pendurada embaixo
+  ctx.fillStyle = lit ? '#facc15' : '#b45309';
+  ctx.fillRect(cx - 1, topY + 15, 3, 2);
+  ctx.fillStyle = lit ? '#fef08a' : '#78350f';
+  ctx.fillRect(cx, topY + 17, 1, 1);
+}
 
 // ---------- Flor de sakura (7x7) ----------
 const FLOWER = ['..P.P..', '.PwPwP.', 'PPpYpPP', '.PYYYP.', 'PPpYpPP', '.PwPwP.', '..P.P..'];
