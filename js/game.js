@@ -448,7 +448,7 @@ function startGame(withIntro = true) {
 function showIntro() {
   const isSora = selectedCharacter === 'male';
   $('dialogue-speaker').textContent = isSora ? 'SORA' : 'RIKU';
-  $('dialogue-avatar-img').src = isSora ? 'assets/bust-sora.png?v=11' : 'assets/bust-riku.png?v=11';
+  $('dialogue-avatar-img').src = isSora ? 'assets/portrait-sora.png?v=12' : 'assets/portrait-riku.png?v=12';
   const full = t('dialogue_' + selectedCharacter);
   $('dialogue-text').textContent = '';
   $('dialogue-box').classList.remove('hidden');
@@ -1040,17 +1040,16 @@ function drawSign() {
 function drawPlayer() {
   if (player.inv > 0 && Math.floor(frame / 4) % 2 === 0) return;
   let anim = 'idle';
-  let idx = Math.floor(frame / 22);
+  let idx = 0;
+  let yOffset = 0;
   if (player.inv > 65) {
     anim = 'hurt';
-    idx = 0;
   } else if (!player.onGround) {
     if (player.vy < 0) {
       anim = 'jump';
       idx = Math.floor(frame / 10);
     } else {
       anim = 'fall';
-      idx = 0;
     }
   } else if (Math.abs(player.vx) > 1.45) {
     anim = 'run';
@@ -1058,8 +1057,11 @@ function drawPlayer() {
   } else if (Math.abs(player.vx) > 0.2) {
     anim = 'walk';
     idx = Math.floor(frame / 7);
+  } else {
+    // Parado: um único quadro estável + respiração suave de 1px (sem trocar de quadro = sem bug visual)
+    yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;
   }
-  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, 26);
+  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, 26, yOffset);
 }
 
 function drawWorld() {

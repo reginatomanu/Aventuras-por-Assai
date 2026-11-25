@@ -67,19 +67,22 @@ const CHAR_ANIMS = {
   },
 };
 
-function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flipX = false, targetHeight = 25) {
+function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flipX = false, targetHeight = 25, yOffset = 0) {
   if (!charSheetImg.complete || !charSheetImg.naturalWidth) return;
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
-  const scale = targetHeight / f.h;
-  const dw = f.w * scale;
-  const dh = targetHeight;
+  // Escala FIXA por personagem (baseada no quadro idle): evita que o sprite "pulse"/tremule ao trocar de quadro
+  const scale = targetHeight / set.idle[0].h;
+  // Posição inteira (pixel perfeito) para não borrar nem vibrar
+  const dw = Math.round(f.w * scale);
+  const dh = Math.round(f.h * scale);
 
   ctx.save();
-  ctx.translate(centerX, bottomY);
+  ctx.translate(Math.round(centerX), Math.round(bottomY + yOffset));
   if (flipX) ctx.scale(-1, 1);
-  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -dw / 2, -dh, dw, dh);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -Math.round(dw / 2), -dh, dw, dh);
   ctx.restore();
 }
 
@@ -511,21 +514,25 @@ function drawSakuraBranch(ctx, W, flip) {
   const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(flip ? W - x - w : x, y, w, h); };
   const C = (cx, cy, r, c) => { pxCircle(ctx, flip ? W - cx : cx, cy, r, c); };
 
-  // Galhos de madeira sombreados
-  R(0, 4, 82, 4, '#2d1628'); R(0, 5, 80, 2, '#4f2842');
-  R(42, 8, 38, 3, '#2d1628'); R(68, 10, 26, 2, '#2d1628');
-  R(14, 8, 4, 28, '#2d1628'); R(15, 8, 2, 26, '#4f2842');
-  R(52, 10, 3, 22, '#2d1628');
+  // Galhos de madeira mais claros e grossos (bem visíveis contra o céu noturno)
+  R(0, 3, 86, 6, '#3a1d33'); R(0, 4, 84, 4, '#7a4a62'); R(0, 4, 84, 1, '#a8708a');
+  R(42, 9, 40, 4, '#3a1d33'); R(43, 10, 38, 2, '#7a4a62');
+  R(68, 11, 30, 3, '#3a1d33'); R(69, 12, 28, 1, '#7a4a62');
+  R(14, 9, 5, 32, '#3a1d33'); R(15, 9, 3, 30, '#7a4a62'); R(15, 9, 1, 30, '#a8708a');
+  R(52, 12, 4, 26, '#3a1d33'); R(53, 12, 2, 24, '#7a4a62');
 
-  // Clusters arredondados de flores de cerejeira em 4 tons
+  // Clusters arredondados de flores de cerejeira, mais vivos e luminosos
   const clusters = [
-    [10, 10, 8], [26, 6, 7], [42, 11, 7], [60, 7, 7], [78, 12, 7], [92, 14, 6],
-    [16, 24, 8], [32, 18, 6], [52, 26, 7], [68, 20, 6], [8, 38, 7], [24, 35, 6],
+    [10, 10, 9], [27, 6, 8], [43, 12, 8], [61, 8, 8], [79, 13, 8], [94, 15, 7],
+    [16, 26, 9], [33, 20, 7], [53, 29, 8], [69, 22, 7], [8, 42, 8], [25, 38, 7], [47, 40, 6],
   ];
   for (const [bx, by, br] of clusters) {
-    C(bx, by + 1, br, '#9d2463');
-    C(bx, by, br - 1, '#df4b94');
-    C(bx - 1, by - 1, Math.max(2, br - 2), '#f786be');
-    C(bx - 2, by - 2, Math.max(1, br - 4), '#ffd1e8');
+    C(bx, by + 1, br, '#c73a82');
+    C(bx, by, br - 1, '#ff6fb0');
+    C(bx - 1, by - 1, Math.max(2, br - 2), '#ff9ccb');
+    C(bx - 2, by - 2, Math.max(1, br - 4), '#ffe0f0');
+    // miolo dourado das flores
+    ctx.fillStyle = '#ffd84d';
+    ctx.fillRect((flip ? W - bx : bx) + 2, by + 2, 1, 1);
   }
 }
