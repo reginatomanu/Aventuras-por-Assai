@@ -143,19 +143,38 @@ const GRAV = 0.22, MAXFALL = 5.2, SPEED = 1.75, ACC = 0.3, JUMP = -5.25, JUMP_CU
 const STARS_BG = Array.from({ length: 70 }, (_, i) => ({ x: (i * 137 + 11) % W, y: 4 + ((i * 89) % 120), big: i % 7 === 0, ph: i * 0.7 }));
 
 // ================= Configurações =================
+function updateTouchControlSize() {
+  const mc = $('mobile-controls');
+  if (!mc) return;
+  const sizeKey = settings.ctrlSize || 'large';
+  mc.dataset.ctrlSize = sizeKey;
+  const factor = { normal: 0.11, large: 0.145, huge: 0.18 }[sizeKey] || 0.145;
+  const baseW = wrapper.clientWidth || window.innerWidth || 800;
+  const px = Math.round(Math.max(58, Math.min(180, baseW * factor)));
+  const jumpPx = Math.round(px * 1.15);
+  mc.style.setProperty('--ctrl-size', px + 'px');
+  [$('btn-left'), $('btn-right')].forEach((b) => {
+    if (!b) return;
+    b.style.width = px + 'px';
+    b.style.height = px + 'px';
+    b.style.fontSize = Math.round(px * 0.44) + 'px';
+  });
+  const jb = $('btn-jump');
+  if (jb) {
+    jb.style.width = jumpPx + 'px';
+    jb.style.height = jumpPx + 'px';
+    jb.style.fontSize = Math.round(jumpPx * 0.44) + 'px';
+  }
+}
+window.addEventListener('resize', updateTouchControlSize);
+window.addEventListener('orientationchange', () => setTimeout(updateTouchControlSize, 120));
+
 function applySettings() {
   LANG = settings.lang;
   applyI18n();
   Audio8.setVolumes(settings.music / 100, settings.sfx / 100);
   wrapper.dataset.hud = settings.hud;
-  wrapper.style.setProperty(
-    '--ctrl-size',
-    {
-      normal: 'clamp(64px, 11cqw, 108px)',
-      large: 'clamp(82px, 14cqw, 136px)',
-      huge: 'clamp(98px, 17cqw, 164px)',
-    }[settings.ctrlSize] || 'clamp(82px, 14cqw, 136px)'
-  );
+  updateTouchControlSize();
   $('mobile-controls').style.opacity = settings.ctrlOpacity / 100;
   $('mobile-controls').classList.toggle('left-handed', !!settings.leftHanded);
   $('set-lang').value = settings.lang;
@@ -199,6 +218,7 @@ const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints
 function updateMobileControls() {
   const show = state === 'playing' && (settings.touch === 'always' || (settings.touch === 'auto' && isTouchDevice()));
   $('mobile-controls').classList.toggle('hidden', !show);
+  if (show) updateTouchControlSize();
 }
 
 // ================= Entrada =================

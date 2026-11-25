@@ -103,6 +103,7 @@ button { font-family: 'Press Start 2P', monospace; cursor: pointer; }
 
 /* ---------- Controles touch ---------- */
 .mobile-controls {
+  --ctrl-size: 96px;
   position: absolute;
   bottom: max(12px, 2.5cqw);
   left: max(14px, 3cqw);
@@ -113,8 +114,11 @@ button { font-family: 'Press Start 2P', monospace; cursor: pointer; }
   pointer-events: none;
   z-index: 8;
 }
+.mobile-controls[data-ctrl-size='normal'] { --ctrl-size: 11cqw; }
+.mobile-controls[data-ctrl-size='large'] { --ctrl-size: 14.5cqw; }
+.mobile-controls[data-ctrl-size='huge'] { --ctrl-size: 18cqw; }
 .mobile-controls.left-handed { flex-direction: row-reverse; }
-.mobile-dpad, .mobile-actions { display: flex; gap: calc(var(--ctrl-size) * 0.22); pointer-events: auto; }
+.mobile-dpad, .mobile-actions { display: flex; gap: calc(var(--ctrl-size) * 0.24); pointer-events: auto; }
 
 .touch-btn {
   width: var(--ctrl-size);
