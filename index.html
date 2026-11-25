@@ -2,133 +2,201 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Made In Assaí - Aventura por Assaí</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0055A4" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Aventuras por Assaí</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="game-wrapper">
-    <!-- Canvas do Jogo -->
-    <canvas id="gameCanvas" width="960" height="540"></canvas>
+  <div id="game-wrapper" data-hud="normal">
+    <canvas id="gameCanvas" width="384" height="216"></canvas>
 
-    <!-- HUD durante o jogo -->
+    <!-- HUD -->
     <div id="hud" class="hidden">
-      <div class="hud-item">
-        <span class="hud-label">PONTOS</span>
-        <span id="hud-score">00000</span>
+      <div class="hud-group">
+        <div id="hud-hearts" class="hud-hearts"></div>
+        <div class="hud-item"><span class="hud-label" data-i18n="hud_score"></span><span id="hud-score">000000</span></div>
+        <div class="hud-item"><span class="hud-label" data-i18n="hud_sakura"></span><span id="hud-coins">x00</span></div>
       </div>
-      <div class="hud-item">
-        <span class="hud-label">SAKURAS</span>
-        <span id="hud-coins">x00</span>
+      <div class="hud-group">
+        <div class="hud-item"><span class="hud-label" data-i18n="hud_time"></span><span id="hud-time">00:00</span></div>
+        <div class="hud-item"><span class="hud-label" data-i18n="hud_stage"></span><span id="hud-world">1-1</span></div>
+        <button id="btn-pause" class="hud-btn" aria-label="Pausa">II</button>
       </div>
-      <div class="hud-item">
-        <span class="hud-label">FASE</span>
-        <span id="hud-world">1-1</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-label">VIDAS</span>
-        <span id="hud-lives">x03</span>
-      </div>
-      <button id="btn-mute" class="pixel-btn small-btn" title="Som">🔊</button>
     </div>
 
-    <!-- Controles Touch para Celular -->
+    <!-- Controles touch -->
     <div id="mobile-controls" class="mobile-controls hidden">
       <div class="mobile-dpad">
-        <button id="btn-left" class="touch-btn" aria-label="Mover para esquerda">◀</button>
-        <button id="btn-right" class="touch-btn" aria-label="Mover para direita">▶</button>
+        <button id="btn-left" class="touch-btn" aria-label="Esquerda">◀</button>
+        <button id="btn-right" class="touch-btn" aria-label="Direita">▶</button>
       </div>
       <div class="mobile-actions">
         <button id="btn-jump" class="touch-btn jump-btn" aria-label="Pular">▲</button>
       </div>
     </div>
 
-    <!-- Banner de Transição de Fase -->
+    <div id="toast-area" class="toast-area"></div>
+
     <div id="stage-banner" class="stage-banner hidden">
       <div class="stage-banner-box">
         <div id="stage-banner-sub" class="stage-banner-sub">FASE 1-1</div>
-        <div id="stage-banner-title" class="stage-banner-title">AVENIDA DOS IPÊS</div>
+        <div id="stage-banner-title" class="stage-banner-title"></div>
       </div>
     </div>
 
-    <!-- Tela Inicial Estilo RPG Pixel Art -->
+    <!-- Tela inicial -->
     <div id="menu-screen" class="title-overlay">
-      <!-- Barra superior com as logos oficiais -->
-      <div class="top-logos-bar">
-        <img src="assets/logo-assai.png" alt="Assaí Governo Municipal" class="logo-img" />
-        <div class="logo-divider"></div>
-        <img src="assets/logo-innovation-week.png" alt="Innovation Week Assaí" class="logo-img logo-iw" />
+      <div class="title-block">
+        <h1 class="rpg-title">AVENTURAS<br />POR ASSAÍ</h1>
+        <div class="rpg-subtitle">SORA &amp; RIKU</div>
       </div>
 
-      <!-- Centro: Medalhão Sora + Título Ornamentado + Medalhão Riku -->
       <div class="title-hero">
-        <button class="medallion-btn selected" data-char="male" id="select-male" title="Escolher Sora">
-          <div class="medallion-ring">
-            <img src="assets/portrait-sora.png" alt="Sora" class="medallion-img" />
-          </div>
+        <button class="medallion-btn selected" id="select-male">
+          <div class="medallion-ring"><img src="assets/portrait-sora.png" alt="Sora" class="medallion-img" /></div>
           <span class="medallion-name">SORA</span>
         </button>
-
-        <div class="title-center">
-          <div class="title-badge">MADE IN ASSAÍ</div>
-          <h1 class="rpg-title">AVENTURA<br />POR ASSAÍ</h1>
-          <div class="rpg-subtitle">SORA &amp; RIKU</div>
-        </div>
-
-        <button class="medallion-btn" data-char="female" id="select-female" title="Escolher Riku">
-          <div class="medallion-ring">
-            <img src="assets/portrait-riku.png" alt="Riku" class="medallion-img" />
-          </div>
+        <button class="medallion-btn" id="select-female">
+          <div class="medallion-ring"><img src="assets/portrait-riku.png" alt="Riku" class="medallion-img" /></div>
           <span class="medallion-name">RIKU</span>
         </button>
       </div>
 
-      <!-- Ação principal e controles -->
       <div class="title-footer">
-        <p class="pick-hint">CLIQUE NO PERSONAGEM E INICIE SUA JORNADA</p>
-        <button id="btn-start" class="rpg-start-btn">
-          <span class="fan-icon">🪭</span> INICIAR JOGO
-        </button>
-        <div class="controls-hint">
-          <span>⬅️ ➡️ ou A / D: Mover</span>
-          <span>⬆️ ou Espaço / W: Pular</span>
+        <button id="btn-start" class="rpg-start-btn"><span>🏮</span><span data-i18n="start"></span></button>
+        <div class="title-menu-row">
+          <button id="btn-open-ranking" class="chip-btn">🏆 <span data-i18n="ranking"></span></button>
+          <button id="btn-open-achievements" class="chip-btn">🎖️ <span data-i18n="achievements"></span></button>
+          <button id="btn-open-settings" class="chip-btn">⚙️ <span data-i18n="settings"></span></button>
         </div>
+        <div class="controls-hint desktop-only" data-i18n="controls_hint"></div>
       </div>
     </div>
 
-    <!-- Caixa de Diálogo Estilo RPG (Quebra da 4ª Parede) -->
+    <!-- Diálogo (4ª parede) -->
     <div id="dialogue-box" class="dialogue-overlay hidden">
       <div class="rpg-dialogue-card">
-        <div class="dialogue-medallion">
-          <img id="dialogue-avatar-img" src="assets/portrait-sora.png" alt="Personagem" class="medallion-img" />
-        </div>
+        <div class="dialogue-medallion"><img id="dialogue-avatar-img" src="assets/portrait-sora.png" alt="" class="medallion-img" /></div>
         <div class="dialogue-content">
           <div id="dialogue-speaker" class="dialogue-speaker">SORA</div>
           <p id="dialogue-text" class="dialogue-text"></p>
-          <div class="dialogue-actions">
-            <button id="btn-dialogue-ok" class="rpg-start-btn small-rpg-btn">BORA AJUDAR! ▶</button>
-          </div>
+          <div class="dialogue-actions"><button id="btn-dialogue-ok" class="rpg-start-btn small" data-i18n="dialogue_ok"></button></div>
         </div>
       </div>
     </div>
 
-    <!-- Tela de Vitória / Game Over -->
+    <!-- Resultado da fase -->
+    <div id="result-screen" class="overlay hidden">
+      <div class="panel">
+        <h2 id="result-title" class="panel-title"></h2>
+        <div id="result-stage" class="panel-sub"></div>
+        <div id="result-stars" class="stars"><span>★</span><span>★</span><span>★</span></div>
+        <div class="star-hint" data-i18n="star_hint"></div>
+        <div id="result-stats" class="stats"></div>
+        <button id="btn-result-continue" class="rpg-start-btn small" data-i18n="continue"></button>
+      </div>
+    </div>
+
+    <!-- Fim de jogo -->
     <div id="end-screen" class="overlay hidden">
-      <div class="rpg-end-card">
-        <h2 id="end-title" class="rpg-title end-title">PARABÉNS!</h2>
-        <p id="end-message" class="end-message">Você chegou ao Castelo Japonês de Assaí!</p>
-        <p class="final-score">PONTUAÇÃO: <span id="final-score-val">0</span></p>
-        <div class="end-buttons">
-          <button id="btn-restart" class="rpg-start-btn small-rpg-btn">JOGAR NOVAMENTE</button>
-          <button id="btn-menu" class="pixel-btn secondary-btn">TELA INICIAL</button>
+      <div class="panel">
+        <h2 id="end-title" class="panel-title"></h2>
+        <p id="end-message" class="panel-text"></p>
+        <div class="end-stats">
+          <div><span data-i18n="final_score"></span><b id="final-score-val">0</b></div>
+          <div><span data-i18n="total_stars"></span><b id="final-stars-val">0 ★</b></div>
+        </div>
+        <div id="name-row" class="name-row">
+          <input id="player-name" maxlength="14" data-i18n-ph="your_name" />
+          <button id="btn-save-score" class="chip-btn" data-i18n="save_score"></button>
+        </div>
+        <p id="host-player" class="panel-text hidden"></p>
+        <p id="save-msg" class="save-msg hidden" data-i18n="saved"></p>
+        <ol id="end-ranking" class="ranking-list"></ol>
+        <div class="panel-buttons">
+          <button id="btn-restart" class="rpg-start-btn small" data-i18n="play_again"></button>
+          <button id="btn-menu" class="chip-btn" data-i18n="main_menu"></button>
         </div>
       </div>
     </div>
+
+    <!-- Ranking -->
+    <div id="ranking-modal" class="overlay hidden">
+      <div class="panel">
+        <h2 class="panel-title" data-i18n="ranking_title"></h2>
+        <ol id="ranking-list" class="ranking-list"></ol>
+        <button class="chip-btn close-modal" data-i18n="close"></button>
+      </div>
+    </div>
+
+    <!-- Conquistas -->
+    <div id="achievements-modal" class="overlay hidden">
+      <div class="panel">
+        <h2 class="panel-title" data-i18n="ach_title"></h2>
+        <ul id="achievements-list" class="ach-list"></ul>
+        <button class="chip-btn close-modal" data-i18n="close"></button>
+      </div>
+    </div>
+
+    <!-- Configurações -->
+    <div id="settings-modal" class="overlay hidden">
+      <div class="panel">
+        <h2 class="panel-title" data-i18n="settings_title"></h2>
+        <div class="settings-grid">
+          <label data-i18n="language"></label>
+          <select id="set-lang"><option value="pt">Português</option><option value="en">English</option><option value="es">Español</option></select>
+
+          <label data-i18n="music"></label>
+          <div class="range-row"><input type="range" id="set-music" min="0" max="100" /><span id="set-music-val"></span></div>
+
+          <label data-i18n="sfx"></label>
+          <div class="range-row"><input type="range" id="set-sfx" min="0" max="100" /><span id="set-sfx-val"></span></div>
+
+          <label data-i18n="hud_size"></label>
+          <select id="set-hud"><option value="small" data-i18n="small"></option><option value="normal" data-i18n="normal"></option><option value="large" data-i18n="large"></option></select>
+
+          <label data-i18n="touch_controls"></label>
+          <select id="set-touch"><option value="auto" data-i18n="auto"></option><option value="always" data-i18n="always"></option><option value="never" data-i18n="never"></option></select>
+
+          <label data-i18n="ctrl_size"></label>
+          <select id="set-ctrl-size"><option value="normal" data-i18n="normal"></option><option value="large" data-i18n="large"></option><option value="huge" data-i18n="huge"></option></select>
+
+          <label data-i18n="ctrl_opacity"></label>
+          <div class="range-row"><input type="range" id="set-ctrl-opacity" min="20" max="100" /><span id="set-ctrl-opacity-val"></span></div>
+
+          <label data-i18n="left_handed"></label>
+          <input type="checkbox" id="set-left" />
+        </div>
+        <div class="panel-buttons">
+          <button id="btn-fullscreen" class="chip-btn" data-i18n="fullscreen"></button>
+          <button class="chip-btn close-modal" data-i18n="close"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pausa -->
+    <div id="pause-modal" class="overlay hidden">
+      <div class="panel">
+        <h2 class="panel-title" data-i18n="paused"></h2>
+        <div class="panel-buttons vertical">
+          <button id="btn-resume" class="rpg-start-btn small" data-i18n="resume"></button>
+          <button id="btn-pause-settings" class="chip-btn">⚙️ <span data-i18n="settings"></span></button>
+          <button id="btn-quit" class="chip-btn" data-i18n="quit"></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="rotate-hint" class="rotate-hint"><div>📱↻</div><p data-i18n="rotate"></p></div>
   </div>
 
+  <script src="js/i18n.js"></script>
+  <script src="js/audio.js"></script>
   <script src="js/sprites.js"></script>
   <script src="js/game.js"></script>
 </body>

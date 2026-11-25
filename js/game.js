@@ -1,1097 +1,1099 @@
-// Motor do Jogo 2D "Made In Assaí" — 3 Fases + Lanternas Japonesas + RPG Intro
+'use strict';
+// Aventuras por Assaí — motor principal
+// Resolução nativa 384x216: todos os sprites e cenários na mesma densidade de pixels.
 
+const W = 384, H = 216, GY = 184;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
+const $ = (id) => document.getElementById(id);
+const wrapper = $('game-wrapper');
 
-// UI Elements
-const menuScreen = document.getElementById('menu-screen');
-const endScreen = document.getElementById('end-screen');
-const dialogueBox = document.getElementById('dialogue-box');
-const dialogueSpeaker = document.getElementById('dialogue-speaker');
-const dialogueText = document.getElementById('dialogue-text');
-const dialogueAvatarImg = document.getElementById('dialogue-avatar-img');
-const btnDialogueOk = document.getElementById('btn-dialogue-ok');
-const stageBanner = document.getElementById('stage-banner');
-const stageBannerSub = document.getElementById('stage-banner-sub');
-const stageBannerTitle = document.getElementById('stage-banner-title');
-const hud = document.getElementById('hud');
-const hudScore = document.getElementById('hud-score');
-const hudCoins = document.getElementById('hud-coins');
-const hudWorld = document.getElementById('hud-world');
-const hudLives = document.getElementById('hud-lives');
-const endTitle = document.getElementById('end-title');
-const endMessage = document.getElementById('end-message');
-const finalScoreVal = document.getElementById('final-score-val');
-const btnStart = document.getElementById('btn-start');
-const btnRestart = document.getElementById('btn-restart');
-const btnMenu = document.getElementById('btn-menu');
-const btnMute = document.getElementById('btn-mute');
-const selectMale = document.getElementById('select-male');
-const selectFemale = document.getElementById('select-female');
-const mobileControls = document.getElementById('mobile-controls');
-const btnLeft = document.getElementById('btn-left');
-const btnRight = document.getElementById('btn-right');
-const btnJump = document.getElementById('btn-jump');
+// ================= Persistência =================
+function loadJSON(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem storage */ } }
 
-const isTouchDevice = () =>
-  'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 900;
+const DEFAULT_SETTINGS = { lang: 'pt', music: 50, sfx: 70, hud: 'normal', touch: 'auto', ctrlSize: 'large', ctrlOpacity: 85, leftHanded: false };
+let settings = { ...DEFAULT_SETTINGS, ...loadJSON('assai_settings', {}) };
+let achievements = loadJSON('assai_ach', {});
+let bestStars = loadJSON('assai_stars', {});
 
-function bindTouchControl(btn, keyCode) {
-  if (!btn) return;
-  const press = (e) => {
-    e.preventDefault();
-    keys[keyCode] = true;
-    btn.classList.add('pressed');
-  };
-  const release = (e) => {
-    e.preventDefault();
-    keys[keyCode] = false;
-    btn.classList.remove('pressed');
-  };
-  btn.addEventListener('pointerdown', press);
-  btn.addEventListener('pointerup', release);
-  btn.addEventListener('pointerleave', release);
-  btn.addEventListener('pointercancel', release);
-}
-
-bindTouchControl(btnLeft, 'ArrowLeft');
-bindTouchControl(btnRight, 'ArrowRight');
-bindTouchControl(btnJump, 'Space');
-
-function updateMobileControlsVisibility() {
-  if (!mobileControls) return;
-  if (gameState === 'playing' && isTouchDevice()) {
-    mobileControls.classList.remove('hidden');
-  } else {
-    mobileControls.classList.add('hidden');
-  }
-}
-window.addEventListener('resize', updateMobileControlsVisibility);
-
-// Estado do jogo
-let selectedCharacter = 'male'; // 'male' = Sora, 'female' = Riku
-let gameState = 'menu'; // 'menu', 'intro', 'playing', 'won', 'gameover'
-let currentStage = 1; // 1, 2 ou 3
-let isMuted = false;
-let animFrameId = null;
-let typewriterTimer = null;
-let stageBannerTimeout = null;
-
-// Áudio retrô (Web Audio API)
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-
-function playTone(freq, duration, type = 'square', volume = 0.08) {
-  if (isMuted) return;
-  if (!audioCtx) audioCtx = new AudioCtx();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
-}
-
-const sfx = {
-  jump: () => {
-    playTone(320, 0.08, 'square');
-    setTimeout(() => playTone(520, 0.12, 'square'), 50);
+// ================= Integração com app externo =================
+// O app hospedeiro pode chamar:
+//   AventurasAssai.setPlayer({ id, name })
+//   AventurasAssai.setRankingProvider({ submit(entry): Promise, fetchTop(n): Promise<entry[]> })
+//   AventurasAssai.onGameEnd = (resultado) => {...}
+//   AventurasAssai.onAchievement = (id) => {...}
+let hostPlayer = null;
+const localRanking = {
+  async submit(entry) {
+    const list = loadJSON('assai_ranking', []);
+    list.push(entry);
+    list.sort((a, b) => b.score - a.score);
+    saveJSON('assai_ranking', list.slice(0, 50));
+    return true;
   },
-  coin: () => {
-    playTone(987, 0.07, 'square');
-    setTimeout(() => playTone(1318, 0.15, 'square'), 65);
-  },
-  lantern: () => {
-    playTone(659, 0.08, 'triangle', 0.12);
-    setTimeout(() => playTone(880, 0.1, 'triangle', 0.12), 55);
-    setTimeout(() => playTone(1318, 0.18, 'sine', 0.11), 115);
-  },
-  stomp: () => {
-    playTone(220, 0.08, 'sawtooth');
-    setTimeout(() => playTone(140, 0.1, 'sawtooth'), 50);
-  },
-  hurt: () => {
-    playTone(180, 0.15, 'sawtooth');
-    setTimeout(() => playTone(110, 0.25, 'sawtooth'), 120);
-  },
-  talk: () => {
-    playTone(540, 0.06, 'square');
-    setTimeout(() => playTone(680, 0.08, 'square'), 60);
-  },
-  stageClear: () => {
-    const notes = [523, 659, 784];
-    notes.forEach((n, i) => setTimeout(() => playTone(n, 0.14, 'square'), i * 100));
-  },
-  win: () => {
-    const notes = [523, 659, 784, 1046, 1318];
-    notes.forEach((n, i) => setTimeout(() => playTone(n, 0.18, 'square'), i * 110));
-  },
+  async fetchTop(n = 10) { return loadJSON('assai_ranking', []).slice(0, n); },
+};
+let rankingProvider = localRanking;
+window.AventurasAssai = {
+  setPlayer(p) { hostPlayer = p && p.name ? p : null; refreshNameRow(); },
+  setRankingProvider(p) { rankingProvider = p || localRanking; },
+  onGameEnd: null,
+  onAchievement: null,
+  getAchievements: () => ({ ...achievements }),
 };
 
-// Controles
-const keys = {};
-window.addEventListener('keydown', (e) => {
-  keys[e.code] = true;
-  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-    e.preventDefault();
-  }
-  if (gameState === 'intro' && (e.code === 'Space' || e.code === 'Enter')) {
-    closeIntroDialogue();
-  }
-});
-window.addEventListener('keyup', (e) => {
-  keys[e.code] = false;
-});
+// ================= Fases =================
+const P = (x, y, w, mx = 0, my = 0, sp = 0) => ({ x, y, w, mx, my, sp });
+const XY = (arr) => arr.map(([x, y]) => ({ x, y }));
+const EN = (arr) => arr.map(([x, min, max, vx]) => ({ x, min, max, vx }));
+const TREE_TYPES = ['sakura', 'ipe-branco', 'ipe-amarelo'];
+const treesEvery = (from, to, step, offset = 0) => {
+  const out = [];
+  let i = offset;
+  for (let x = from; x < to; x += step) out.push({ x, type: TREE_TYPES[i++ % 3] });
+  return out;
+};
 
-// Seleção de Personagem (Sora e Riku)
-selectMale.addEventListener('click', () => {
-  selectedCharacter = 'male';
-  selectMale.classList.add('selected');
-  selectFemale.classList.remove('selected');
-  playTone(660, 0.06);
-});
-
-selectFemale.addEventListener('click', () => {
-  selectedCharacter = 'female';
-  selectFemale.classList.add('selected');
-  selectMale.classList.remove('selected');
-  playTone(740, 0.06);
-});
-
-btnMute.addEventListener('click', () => {
-  isMuted = !isMuted;
-  btnMute.textContent = isMuted ? '🔇' : '🔊';
-});
-
-btnStart.addEventListener('click', () => startGame(true));
-btnRestart.addEventListener('click', () => startGame(false));
-btnDialogueOk.addEventListener('click', closeIntroDialogue);
-
-btnMenu.addEventListener('click', () => {
-  endScreen.classList.add('hidden');
-  dialogueBox.classList.add('hidden');
-  stageBanner.classList.add('hidden');
-  hud.classList.add('hidden');
-  menuScreen.classList.remove('hidden');
-  gameState = 'menu';
-  updateMobileControlsVisibility();
-});
-
-// Constantes do mundo
-const GRAVITY = 0.55;
-const GROUND_Y = 460;
-
-// Estrelas fixas para a Tela Inicial e Fase 3 (Noite)
-const STARS = Array.from({ length: 65 }, (_, i) => ({
-  x: (i * 137) % 960,
-  y: 18 + ((i * 89) % 240),
-  size: i % 5 === 0 ? 3 : 2,
-  phase: i * 0.7,
-}));
-
-// Definição das 3 Fases de Assaí
 const STAGES = {
   1: {
-    code: '1-1',
-    name: 'AVENIDA DOS IPÊS',
-    theme: 'day',
-    worldWidth: 2800,
-    goalX: 2560,
-    hasCastle: false,
-    platforms: [
-      { x: 400, y: 360, w: 120, h: 24 },
-      { x: 640, y: 290, w: 125, h: 24 },
-      { x: 1000, y: 345, w: 130, h: 24, moveX: 70, speed: 0.03 },
-      { x: 1420, y: 295, w: 130, h: 24 },
-      { x: 1760, y: 340, w: 120, h: 24, moveY: 45, speed: 0.035 },
-      { x: 2140, y: 290, w: 130, h: 24 },
-    ],
-    lanterns: [
-      { x: 450, y: 235, w: 32, h: 36, lit: false },
-      { x: 695, y: 175, w: 32, h: 36, lit: false },
-      { x: 1085, y: 230, w: 32, h: 36, lit: false },
-      { x: 1500, y: 180, w: 32, h: 36, lit: false },
-      { x: 1945, y: 235, w: 32, h: 36, lit: false },
-    ],
-    collectibles: [
-      { x: 300, y: 410 }, { x: 445, y: 320 }, { x: 485, y: 320 },
-      { x: 685, y: 255 }, { x: 730, y: 255 }, { x: 920, y: 410 },
-      { x: 1070, y: 310 }, { x: 1120, y: 310 }, { x: 1495, y: 260 },
-      { x: 1930, y: 315 }, { x: 2255, y: 255 }, { x: 2420, y: 410 },
-    ],
-    enemies: [
-      { x: 560, vx: -1.7, minX: 450, maxX: 780 },
-      { x: 960, vx: 1.8, minX: 840, maxX: 1120 },
-      { x: 1260, vx: -1.9, minX: 1100, maxX: 1450 },
-      { x: 1720, vx: 1.8, minX: 1560, maxX: 1920 },
-      { x: 2150, vx: -2.0, minX: 2000, maxX: 2400 },
-    ],
-    toriis: [250, 1320],
-    trees: [
-      { x: 150, type: 'sakura' }, { x: 370, type: 'ipe-branco' },
-      { x: 610, type: 'ipe-amarelo' }, { x: 860, type: 'sakura' },
-      { x: 1040, type: 'ipe-branco' }, { x: 1230, type: 'sakura' },
-      { x: 1540, type: 'ipe-amarelo' }, { x: 1800, type: 'ipe-branco' },
-      { x: 2100, type: 'sakura' }, { x: 2380, type: 'ipe-amarelo' },
-    ],
+    code: '1-1', key: 'stage1', theme: 'day', width: 1240, goalX: 1180, par: 75, next: 2, sign: true,
+    platforms: [P(150, 154, 44), P(230, 128, 44), P(330, 150, 40, 26, 0, 0.025), P(460, 128, 44), P(560, 150, 40, 0, 16, 0.03),
+      P(680, 126, 44), P(800, 150, 40, 24, 0, 0.03), P(930, 128, 44), P(1040, 152, 44)],
+    lanterns: XY([[167, 102], [247, 76], [477, 76], [620, 131], [697, 74], [880, 131], [947, 76], [1057, 100]]),
+    enemies: EN([[260, 200, 320, -0.55], [420, 380, 520, 0.6], [640, 600, 760, -0.65], [860, 820, 980, 0.65], [1040, 990, 1120, -0.7]]),
+    flowers: XY([[100, 172], [172, 140], [188, 140], [252, 114], [350, 136], [420, 172], [482, 114], [540, 172], [582, 134], [702, 112],
+      [760, 172], [822, 136], [952, 114], [1062, 138], [1140, 172]]),
+    toriis: [110, 760],
+    trees: treesEvery(40, 1150, 72),
+    decor: [],
   },
   2: {
-    code: '1-2',
-    name: 'PARQUE IKEDA',
-    theme: 'sunset',
-    hasLake: true,
-    worldWidth: 3000,
-    goalX: 2740,
-    hasCastle: false,
-    platforms: [
-      { x: 360, y: 360, w: 115, h: 24 },
-      { x: 560, y: 290, w: 115, h: 24, moveX: 65, speed: 0.032 },
-      { x: 800, y: 235, w: 120, h: 24 },
-      { x: 1100, y: 345, w: 120, h: 24, moveY: 50, speed: 0.038 },
-      { x: 1380, y: 270, w: 125, h: 24 },
-      { x: 1700, y: 335, w: 130, h: 24, moveX: 85, speed: 0.035 },
-      { x: 2040, y: 265, w: 125, h: 24, moveY: 45, speed: 0.04 },
-      { x: 2350, y: 330, w: 135, h: 24 },
-    ],
-    lanterns: [
-      { x: 405, y: 240, w: 32, h: 36, lit: false },
-      { x: 830, y: 120, w: 32, h: 36, lit: false },
-      { x: 1175, y: 225, w: 32, h: 36, lit: false },
-      { x: 1430, y: 155, w: 32, h: 36, lit: false },
-      { x: 1805, y: 220, w: 32, h: 36, lit: false },
-      { x: 2095, y: 150, w: 32, h: 36, lit: false },
-    ],
-    collectibles: [
-      { x: 280, y: 410 }, { x: 405, y: 320 }, { x: 605, y: 245 },
-      { x: 830, y: 195 }, { x: 1170, y: 305 }, { x: 1430, y: 230 },
-      { x: 1790, y: 300 }, { x: 1840, y: 300 }, { x: 2095, y: 225 },
-      { x: 2405, y: 290 }, { x: 2600, y: 410 },
-    ],
-    enemies: [
-      { x: 520, vx: -1.8, minX: 400, maxX: 720 },
-      { x: 980, vx: 1.9, minX: 880, maxX: 1220 },
-      { x: 1560, vx: -2.0, minX: 1420, maxX: 1780 },
-      { x: 2000, vx: -2.1, minX: 1880, maxX: 2240 },
-      { x: 2460, vx: -2.0, minX: 2320, maxX: 2640 },
-    ],
-    toriis: [220, 1020, 1940],
-    trees: [
-      { x: 140, type: 'ipe-amarelo' }, { x: 460, type: 'sakura' },
-      { x: 740, type: 'ipe-branco' }, { x: 1180, type: 'sakura' },
-      { x: 1480, type: 'ipe-amarelo' }, { x: 1760, type: 'sakura' },
-      { x: 2140, type: 'ipe-branco' }, { x: 2480, type: 'sakura' },
-    ],
+    code: '1-2', key: 'stage2', theme: 'sunset', width: 1340, goalX: 1280, par: 85, next: 3, lake: true,
+    platforms: [P(140, 152, 40), P(220, 128, 40, 24, 0, 0.03), P(330, 104, 40), P(430, 146, 40, 0, 20, 0.035), P(540, 122, 40),
+      P(640, 146, 40, 30, 0, 0.032), P(770, 120, 40, 0, 18, 0.04), P(880, 146, 40), P(980, 124, 40, 26, 0, 0.035),
+      P(1100, 140, 36, 0, 36, 0.028), P(1170, 70, 40)],
+    lanterns: XY([[155, 100], [235, 76], [345, 52], [555, 70], [785, 50], [895, 94], [1060, 131]]),
+    enemies: EN([[200, 160, 300, -0.7], [400, 330, 500, 0.75], [600, 560, 700, -0.8], [760, 720, 860, 0.8], [960, 900, 1060, -0.85], [1150, 1080, 1240, 0.85]]),
+    flowers: XY([[100, 172], [160, 138], [240, 114], [350, 90], [366, 90], [450, 132], [470, 172], [560, 108], [660, 132], [700, 172],
+      [790, 106], [900, 132], [1000, 110], [1120, 120], [1190, 56], [1240, 172]]),
+    toriis: [80, 620],
+    trees: treesEvery(50, 1260, 130, 1),
+    secret: { x: 1190, y: 70 },
+    decor: [],
   },
   3: {
-    code: '1-3',
-    name: 'RUMO AO CASTELO JAPONÊS',
-    theme: 'night',
-    worldWidth: 3300,
-    goalX: 2980,
-    hasCastle: true, // SOMENTE no final da 3ª fase aparece o Castelo Japonês!
-    platforms: [
-      { x: 340, y: 365, w: 110, h: 24 },
-      { x: 550, y: 290, w: 110, h: 24, moveX: 70, speed: 0.038 },
-      { x: 820, y: 345, w: 115, h: 24, moveY: 50, speed: 0.04 },
-      { x: 1080, y: 265, w: 120, h: 24 },
-      { x: 1350, y: 340, w: 120, h: 24, moveX: 85, speed: 0.042 },
-      { x: 1640, y: 260, w: 115, h: 24 },
-      { x: 1900, y: 335, w: 125, h: 24, moveY: 55, speed: 0.042 },
-      { x: 2200, y: 270, w: 120, h: 24, moveX: 80, speed: 0.04 },
-      { x: 2520, y: 345, w: 125, h: 24 },
-    ],
-    lanterns: [
-      { x: 385, y: 245, w: 32, h: 36, lit: false },
-      { x: 605, y: 170, w: 32, h: 36, lit: false },
-      { x: 870, y: 225, w: 32, h: 36, lit: false },
-      { x: 1130, y: 150, w: 32, h: 36, lit: false },
-      { x: 1415, y: 220, w: 32, h: 36, lit: false },
-      { x: 1690, y: 145, w: 32, h: 36, lit: false },
-      { x: 1980, y: 220, w: 32, h: 36, lit: false },
-      { x: 2275, y: 155, w: 32, h: 36, lit: false },
-      { x: 2575, y: 225, w: 32, h: 36, lit: false },
-    ],
-    collectibles: [
-      { x: 260, y: 410 }, { x: 385, y: 325 }, { x: 605, y: 250 },
-      { x: 870, y: 305 }, { x: 1130, y: 225 }, { x: 1415, y: 300 },
-      { x: 1690, y: 220 }, { x: 1980, y: 300 }, { x: 2275, y: 230 },
-      { x: 2575, y: 305 }, { x: 2780, y: 410 }, { x: 2840, y: 410 },
-    ],
-    enemies: [
-      { x: 480, vx: -2.2, minX: 360, maxX: 720 },
-      { x: 860, vx: 2.3, minX: 740, maxX: 1120 },
-      { x: 1280, vx: -2.4, minX: 1140, maxX: 1520 },
-      { x: 1680, vx: 2.3, minX: 1540, maxX: 1920 },
-      { x: 2080, vx: -2.5, minX: 1920, maxX: 2340 },
-      { x: 2480, vx: 2.4, minX: 2340, maxX: 2720 },
-      { x: 2780, vx: -2.3, minX: 2640, maxX: 2920 },
-    ],
-    toriis: [230, 1260, 2760],
-    trees: [
-      { x: 130, type: 'sakura' }, { x: 440, type: 'ipe-branco' },
-      { x: 760, type: 'sakura' }, { x: 1120, type: 'ipe-amarelo' },
-      { x: 1520, type: 'sakura' }, { x: 1860, type: 'ipe-branco' },
-      { x: 2260, type: 'sakura' }, { x: 2620, type: 'ipe-amarelo' },
-    ],
+    code: '1-3', key: 'stage3', theme: 'night', width: 1460, goalX: 1380, par: 100, next: 'end', castle: true,
+    platforms: [P(130, 150, 36), P(210, 126, 36, 22, 0, 0.035), P(310, 104, 36), P(400, 142, 36, 0, 22, 0.04), P(500, 118, 36, 30, 0, 0.038),
+      P(620, 96, 36), P(720, 140, 36, 0, 26, 0.042), P(820, 116, 36), P(920, 140, 36, 32, 0, 0.04), P(1040, 118, 36, 0, 20, 0.045),
+      P(1140, 100, 36), P(1230, 146, 36, 20, 0, 0.04)],
+    lanterns: XY([[143, 98], [323, 52], [455, 131], [633, 44], [735, 60], [833, 64], [1005, 131], [1153, 48]]),
+    enemies: EN([[180, 150, 290, -0.8], [360, 300, 440, 0.85], [560, 480, 640, -0.9], [700, 660, 800, 0.9], [880, 840, 980, -0.95],
+      [1080, 1020, 1160, 0.95], [1240, 1190, 1310, -1]]),
+    flowers: XY([[90, 172], [146, 136], [228, 112], [326, 90], [416, 128], [470, 172], [518, 104], [636, 82], [736, 126], [836, 102],
+      [938, 126], [1056, 104], [1156, 86], [1248, 132], [1300, 172]]),
+    toriis: [90, 560, 1100],
+    trees: treesEvery(40, 1240, 95, 2),
+    decor: [{ t: 'toro', x: 300 }, { t: 'toro', x: 680 }, { t: 'toro', x: 980 }, { t: 'toro', x: 1290 }],
+  },
+  S: {
+    code: '★', key: 'stageS', theme: 'secret', width: 900, goalX: 840, par: 45, next: 3, golden: true,
+    platforms: [P(120, 150, 60), P(220, 124, 60, 20, 0, 0.03), P(340, 100, 60), P(460, 124, 60, 0, 16, 0.03), P(580, 100, 60), P(700, 140, 60)],
+    lanterns: XY([[145, 98], [365, 48], [605, 48], [725, 88]]),
+    enemies: EN([[300, 250, 420, 0.6], [520, 480, 640, -0.6], [760, 700, 820, 0.6]]),
+    flowers: (() => {
+      const f = [];
+      for (let x = 60; x < 820; x += 22) f.push([x, 172]);
+      [[120, 150, 60], [340, 100, 60], [580, 100, 60], [700, 140, 60]].forEach(([px, py, pw]) => { for (let i = 8; i < pw; i += 14) f.push([px + i, py - 12]); });
+      return XY(f);
+    })(),
+    toriis: [60],
+    trees: [{ x: 90, type: 'sakura' }, { x: 250, type: 'ipe-rosa' }, { x: 420, type: 'sakura' }, { x: 560, type: 'ipe-rosa' }, { x: 690, type: 'sakura' }],
+    decor: [],
   },
 };
 
-let player, cameraX = 0, score = 0, coins = 0, lives = 3, frameCount = 0;
-let worldWidth = 2800;
-let goalX = 2560;
-let platforms = [];
-let lanterns = [];
-let collectibles = [];
-let enemies = [];
-let toriis = [];
-let trees = [];
-let petals = [];
-let lightParticles = [];
+const THEMES = {
+  day: { sky: ['#2f7fe0', '#3f8eea', '#55a0f2', '#6eb2f7', '#8ac3fa', '#a7d4fc'], hillFar: '#7cc47f', hillNear: '#4fae5a', bush: '#3d9a4c',
+    grass: '#3fa34d', grassL: '#6cc46a', dirt: '#a0612f', dirtL: '#c08050', dirtD: '#7a4520', music: 'day', petals: 18, clouds: '#ffffff', cloudsS: '#d6e9fb' },
+  sunset: { sky: ['#2b2d6e', '#4b2f86', '#8a3a8f', '#c94f7c', '#f07a5a', '#fbb04a'], hillFar: '#7b3f6e', hillNear: '#3f6b3a', bush: '#2f5a30',
+    grass: '#3f7d3a', grassL: '#6aa055', dirt: '#8a4a2a', dirtL: '#a8643a', dirtD: '#5e3018', music: 'sunset', petals: 22, clouds: '#ffc9a8', cloudsS: '#e79a86' },
+  night: { sky: ['#060b1f', '#0a1430', '#0e1d44', '#132757', '#18316a', '#1d3b7c'], hillFar: '#1c2a4a', hillNear: '#183a2c', bush: '#123024',
+    grass: '#1f5a36', grassL: '#2f7a48', dirt: '#5a3418', dirtL: '#74462a', dirtD: '#3b210f', music: 'night', petals: 16 },
+  secret: { sky: ['#3b1d4f', '#5b2a6e', '#83388a', '#b04c9c', '#d86fae', '#f5a3c7'], hillFar: '#9d4c8e', hillNear: '#5e8a4a', bush: '#4c7a3e',
+    grass: '#55964a', grassL: '#86c26a', dirt: '#8b4a5a', dirtL: '#a8687a', dirtD: '#5e2f3e', music: 'secret', petals: 40 },
+};
 
-function spawnLanternLights(cx, cy, count = 18) {
-  const colors = ['#ffffff', '#fef08a', '#facc15', '#fb923c', '#fda4af'];
-  for (let i = 0; i < count; i++) {
-    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
-    const speed = 1.4 + Math.random() * 3.2;
-    lightParticles.push({
-      x: cx,
-      y: cy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 1.2,
-      life: 35 + Math.floor(Math.random() * 30),
-      maxLife: 65,
-      size: Math.random() > 0.4 ? 4 : 3,
-      color: colors[Math.floor(Math.random() * colors.length)],
+// ================= Estado =================
+let state = 'menu'; // menu | intro | playing | paused | result | won | gameover
+let selectedCharacter = 'male';
+let stageId = 1, cfg = STAGES[1], theme = THEMES.day;
+let player, camX = 0, frame = 0;
+let platforms = [], lanterns = [], enemies = [], flowers = [], particles = [], popups = [], petals = [];
+let score = 0, lives = 3, sakuraCount = 0, totalStars = 0, totalFrames = 0;
+let secretFound = false, tookDamage = false, nextStageId = 2, scoreSaved = false;
+let st = {};
+const keys = {};
+let jumpHeld = false, jumpBuffer = 0, coyote = 0;
+let typewriterTimer = null, bannerTimer = null, pausedFrom = null, settingsReturn = null;
+
+const GRAV = 0.22, MAXFALL = 5.2, SPEED = 1.75, ACC = 0.3, JUMP = -5.25, JUMP_CUT = -2;
+
+const STARS_BG = Array.from({ length: 70 }, (_, i) => ({ x: (i * 137 + 11) % W, y: 4 + ((i * 89) % 120), big: i % 7 === 0, ph: i * 0.7 }));
+
+// ================= Configurações =================
+function applySettings() {
+  LANG = settings.lang;
+  applyI18n();
+  Audio8.setVolumes(settings.music / 100, settings.sfx / 100);
+  wrapper.dataset.hud = settings.hud;
+  document.documentElement.style.setProperty('--ctrl-size', { normal: '76px', large: '96px', huge: '118px' }[settings.ctrlSize] || '96px');
+  $('mobile-controls').style.opacity = settings.ctrlOpacity / 100;
+  $('mobile-controls').classList.toggle('left-handed', !!settings.leftHanded);
+  $('set-lang').value = settings.lang;
+  $('set-music').value = settings.music; $('set-music-val').textContent = settings.music + '%';
+  $('set-sfx').value = settings.sfx; $('set-sfx-val').textContent = settings.sfx + '%';
+  $('set-hud').value = settings.hud;
+  $('set-touch').value = settings.touch;
+  $('set-ctrl-size').value = settings.ctrlSize;
+  $('set-ctrl-opacity').value = settings.ctrlOpacity; $('set-ctrl-opacity-val').textContent = settings.ctrlOpacity + '%';
+  $('set-left').checked = !!settings.leftHanded;
+  saveJSON('assai_settings', settings);
+  updateMobileControls();
+  if (state === 'intro') $('dialogue-text').textContent = t('dialogue_' + selectedCharacter);
+}
+
+function bindSetting(id, key, transform = (v) => v, evt = 'input') {
+  $(id).addEventListener(evt, (e) => {
+    settings[key] = transform(e.target.type === 'checkbox' ? e.target.checked : e.target.value);
+    applySettings();
+  });
+}
+bindSetting('set-lang', 'lang', String, 'change');
+bindSetting('set-music', 'music', Number);
+bindSetting('set-sfx', 'sfx', Number);
+bindSetting('set-hud', 'hud', String, 'change');
+bindSetting('set-touch', 'touch', String, 'change');
+bindSetting('set-ctrl-size', 'ctrlSize', String, 'change');
+bindSetting('set-ctrl-opacity', 'ctrlOpacity', Number);
+bindSetting('set-left', 'leftHanded', Boolean, 'change');
+$('set-sfx').addEventListener('change', () => Audio8.sfx.coin());
+
+$('btn-fullscreen').addEventListener('click', () => {
+  const el = document.documentElement;
+  if (!document.fullscreenElement) {
+    (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+  } else if (document.exitFullscreen) document.exitFullscreen();
+});
+
+const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+function updateMobileControls() {
+  const show = state === 'playing' && (settings.touch === 'always' || (settings.touch === 'auto' && isTouchDevice()));
+  $('mobile-controls').classList.toggle('hidden', !show);
+}
+
+// ================= Entrada =================
+const GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+window.addEventListener('keydown', (e) => {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  keys[e.code] = true;
+  if (GAME_KEYS.includes(e.code)) e.preventDefault();
+  if (state === 'intro' && (e.code === 'Space' || e.code === 'Enter')) closeIntro();
+  else if (state === 'menu' && e.code === 'Enter' && !anyModalOpen()) startGame();
+  else if ((e.code === 'KeyP' || e.code === 'Escape') && (state === 'playing' || state === 'paused')) togglePause();
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+function bindTouch(btn, code) {
+  const on = (e) => { e.preventDefault(); keys[code] = true; btn.classList.add('pressed'); if (btn.setPointerCapture && e.pointerId != null) try { btn.setPointerCapture(e.pointerId); } catch (_) {} };
+  const off = (e) => { e.preventDefault(); keys[code] = false; btn.classList.remove('pressed'); };
+  btn.addEventListener('pointerdown', on);
+  btn.addEventListener('pointerup', off);
+  btn.addEventListener('pointercancel', off);
+  btn.addEventListener('lostpointercapture', off);
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+bindTouch($('btn-left'), 'ArrowLeft');
+bindTouch($('btn-right'), 'ArrowRight');
+bindTouch($('btn-jump'), 'Space');
+
+// Desbloqueia áudio no primeiro toque/clique
+const unlockAudio = () => {
+  Audio8.ensure();
+  if (state === 'menu') Audio8.playMusic('title');
+  window.removeEventListener('pointerdown', unlockAudio);
+  window.removeEventListener('keydown', unlockAudio);
+};
+window.addEventListener('pointerdown', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
+
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'playing') togglePause(); });
+
+// ================= Menu / UI =================
+function selectChar(c) {
+  selectedCharacter = c;
+  $('select-male').classList.toggle('selected', c === 'male');
+  $('select-female').classList.toggle('selected', c === 'female');
+  Audio8.sfx.select();
+}
+$('select-male').addEventListener('click', () => selectChar('male'));
+$('select-female').addEventListener('click', () => selectChar('female'));
+$('btn-start').addEventListener('click', () => startGame());
+$('btn-dialogue-ok').addEventListener('click', closeIntro);
+$('btn-result-continue').addEventListener('click', continueAfterResult);
+$('btn-restart').addEventListener('click', () => { $('end-screen').classList.add('hidden'); startGame(false); });
+$('btn-menu').addEventListener('click', goToMenu);
+$('btn-quit').addEventListener('click', goToMenu);
+$('btn-pause').addEventListener('click', togglePause);
+$('btn-resume').addEventListener('click', togglePause);
+$('btn-pause-settings').addEventListener('click', () => { $('pause-modal').classList.add('hidden'); openModal('settings-modal', 'pause-modal'); });
+$('btn-open-settings').addEventListener('click', () => openModal('settings-modal'));
+$('btn-open-ranking').addEventListener('click', () => { renderRanking($('ranking-list'), 10); openModal('ranking-modal'); });
+$('btn-open-achievements').addEventListener('click', () => { renderAchievements(); openModal('achievements-modal'); });
+document.querySelectorAll('.close-modal').forEach((b) => b.addEventListener('click', () => {
+  const m = b.closest('.overlay');
+  m.classList.add('hidden');
+  if (settingsReturn && m.id === 'settings-modal') { $(settingsReturn).classList.remove('hidden'); settingsReturn = null; }
+}));
+$('btn-save-score').addEventListener('click', saveScore);
+
+function openModal(id, returnTo = null) {
+  settingsReturn = returnTo;
+  $(id).classList.remove('hidden');
+  Audio8.sfx.select();
+}
+function anyModalOpen() {
+  return ['settings-modal', 'ranking-modal', 'achievements-modal'].some((id) => !$(id).classList.contains('hidden'));
+}
+
+function toast(html) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = html;
+  $('toast-area').appendChild(el);
+  setTimeout(() => el.remove(), 3100);
+}
+
+const ACH_LIST = [
+  { id: 'lanterns', icon: '🏮' }, { id: 'enemies', icon: '🐞' }, { id: 'secret', icon: '⛩️' },
+  { id: 'stars', icon: '⭐' }, { id: 'nohit', icon: '💖' },
+];
+function unlock(id) {
+  if (achievements[id]) return;
+  achievements[id] = Date.now();
+  saveJSON('assai_ach', achievements);
+  const a = ACH_LIST.find((x) => x.id === id);
+  setTimeout(() => {
+    toast(`${a ? a.icon : '🎖️'} <b>${t('ach_unlocked')}</b> ${t('ach_' + id)}`);
+    Audio8.sfx.achievement();
+  }, 350);
+  if (typeof window.AventurasAssai.onAchievement === 'function') window.AventurasAssai.onAchievement(id);
+}
+
+function renderAchievements() {
+  $('achievements-list').innerHTML = ACH_LIST.map((a) => `
+    <li class="${achievements[a.id] ? 'on' : ''}">
+      <span class="ach-icon">${achievements[a.id] ? a.icon : '🔒'}</span>
+      <div><div class="ach-name">${t('ach_' + a.id)}</div><div class="ach-desc">${t('ach_' + a.id + '_d')}</div></div>
+    </li>`).join('');
+}
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+async function renderRanking(el, n, highlight) {
+  let list = [];
+  try { list = await rankingProvider.fetchTop(n); } catch (e) { list = []; }
+  if (!list || !list.length) { el.innerHTML = `<li class="empty">${t('ranking_empty')}</li>`; return; }
+  el.innerHTML = list.map((r) => `
+    <li class="${highlight && r.date === highlight ? 'me' : ''}">
+      <span>${esc(r.name)}</span><span>${String(r.score).padStart(6, '0')}</span><span class="rk-stars">${r.stars || 0}★</span>
+    </li>`).join('');
+}
+
+function refreshNameRow() {
+  const hasHost = !!hostPlayer;
+  $('name-row').classList.toggle('hidden', hasHost || scoreSaved);
+  $('host-player').classList.toggle('hidden', !hasHost);
+  if (hasHost) $('host-player').textContent = `${t('playing_as')}: ${hostPlayer.name}`;
+}
+
+async function saveScore() {
+  if (scoreSaved) return;
+  const name = (hostPlayer && hostPlayer.name) || $('player-name').value.trim() || t('player');
+  const entry = {
+    playerId: hostPlayer ? hostPlayer.id : null, name, score, stars: totalStars,
+    character: selectedCharacter === 'male' ? 'Sora' : 'Riku',
+    timeSeconds: Math.round(totalFrames / 60), won: state === 'won', date: new Date().toISOString(),
+  };
+  try { await rankingProvider.submit(entry); } catch (e) { /* falha silenciosa */ }
+  scoreSaved = true;
+  $('save-msg').classList.remove('hidden');
+  refreshNameRow();
+  renderRanking($('end-ranking'), 5, entry.date);
+}
+
+function heartsHTML() {
+  let h = '';
+  for (let i = 0; i < 3; i++) h += heartSVG(i < lives);
+  return h;
+}
+
+let hudCache = {};
+function setHud(id, val) { if (hudCache[id] !== val) { hudCache[id] = val; $(id).innerHTML = val; } }
+function fmtTime(frames) {
+  const s = Math.floor(frames / 60);
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+function updateHUD() {
+  setHud('hud-hearts', heartsHTML());
+  setHud('hud-score', String(score).padStart(6, '0'));
+  setHud('hud-coins', 'x' + String(sakuraCount).padStart(2, '0'));
+  setHud('hud-time', fmtTime(st.frames || 0));
+  setHud('hud-world', cfg.code);
+}
+
+function showBanner() {
+  if (bannerTimer) clearTimeout(bannerTimer);
+  $('stage-banner-sub').textContent = `${t('stage_word')} ${cfg.code}`;
+  $('stage-banner-title').textContent = t(cfg.key);
+  $('stage-banner').classList.remove('hidden');
+  bannerTimer = setTimeout(() => $('stage-banner').classList.add('hidden'), 2200);
+}
+
+// ================= Fluxo do jogo =================
+function initPetals() {
+  petals = Array.from({ length: theme.petals }, () => ({
+    x: Math.random() * W, y: Math.random() * H, vx: -0.15 - Math.random() * 0.25, vy: 0.25 + Math.random() * 0.35,
+    c: Math.random() > 0.3 ? '#fbcfe8' : (Math.random() > 0.5 ? '#ffffff' : '#ffe27a'), s: Math.random() > 0.7 ? 2 : 1,
+  }));
+}
+
+function loadStage(id) {
+  stageId = id;
+  cfg = STAGES[id];
+  theme = THEMES[cfg.theme];
+  platforms = cfg.platforms.map((p) => ({ ...p, h: 6, bx: p.x, by: p.y, dx: 0, dy: 0 }));
+  lanterns = cfg.lanterns.map((l) => ({ ...l, w: 10, h: 15, lit: false, golden: !!cfg.golden }));
+  enemies = cfg.enemies.map((e) => ({ ...e, y: GY - 10, w: 14, h: 10, dead: false, squash: 0 }));
+  flowers = cfg.flowers.map((f) => ({ ...f, got: false }));
+  particles = []; popups = [];
+  player = { x: 70, y: GY - 19, w: 12, h: 19, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null };
+  camX = 0;
+  st = { frames: 0, score: 0, lanterns: 0, enemies: 0, flowers: 0 };
+  cfg.maxBase = lanterns.length * (cfg.golden ? 500 : 300) + enemies.length * 400 + flowers.length * 50;
+  initPetals();
+  Audio8.playMusic(theme.music);
+  hudCache = {};
+  updateHUD();
+}
+
+function startGame(withIntro = true) {
+  Audio8.ensure();
+  score = 0; lives = 3; sakuraCount = 0; totalStars = 0; totalFrames = 0;
+  secretFound = false; tookDamage = false; scoreSaved = false;
+  loadStage(1);
+  $('menu-screen').classList.add('hidden');
+  $('hud').classList.remove('hidden');
+  if (withIntro) {
+    state = 'intro';
+    showIntro();
+  } else {
+    state = 'playing';
+    showBanner();
+  }
+  updateMobileControls();
+}
+
+function showIntro() {
+  const isSora = selectedCharacter === 'male';
+  $('dialogue-speaker').textContent = isSora ? 'SORA' : 'RIKU';
+  $('dialogue-avatar-img').src = isSora ? 'assets/portrait-sora.png' : 'assets/portrait-riku.png';
+  const full = t('dialogue_' + selectedCharacter);
+  $('dialogue-text').textContent = '';
+  $('dialogue-box').classList.remove('hidden');
+  Audio8.sfx.talk();
+  if (typewriterTimer) clearInterval(typewriterTimer);
+  let i = 0;
+  typewriterTimer = setInterval(() => {
+    i++;
+    $('dialogue-text').textContent = full.slice(0, i);
+    if (i % 4 === 0) Audio8.sfx.select && null;
+    if (i >= full.length) { clearInterval(typewriterTimer); typewriterTimer = null; }
+  }, 22);
+}
+
+function closeIntro() {
+  if (state !== 'intro') return;
+  if (typewriterTimer) { clearInterval(typewriterTimer); typewriterTimer = null; }
+  $('dialogue-box').classList.add('hidden');
+  state = 'playing';
+  keys.Space = false; jumpHeld = true;
+  updateMobileControls();
+  showBanner();
+}
+
+function togglePause() {
+  if (state === 'playing') {
+    state = 'paused';
+    $('pause-modal').classList.remove('hidden');
+    Audio8.stopMusic();
+  } else if (state === 'paused') {
+    state = 'playing';
+    $('pause-modal').classList.add('hidden');
+    $('settings-modal').classList.add('hidden');
+    settingsReturn = null;
+    Audio8.playMusic(theme.music);
+  }
+  updateMobileControls();
+}
+
+function goToMenu() {
+  ['end-screen', 'pause-modal', 'result-screen', 'dialogue-box', 'stage-banner', 'hud', 'settings-modal'].forEach((id) => $(id).classList.add('hidden'));
+  $('menu-screen').classList.remove('hidden');
+  state = 'menu';
+  theme = THEMES.night;
+  initPetals();
+  Audio8.playMusic('title');
+  updateMobileControls();
+}
+
+function completeStage(viaSecret) {
+  state = 'result';
+  updateMobileControls();
+  Audio8.stopMusic();
+  Audio8.sfx.stageClear();
+  const secs = st.frames / 60;
+  const timeBonus = viaSecret ? 0 : Math.max(0, Math.floor((cfg.par - secs) * 20));
+  score += timeBonus + 300;
+  let stars = 1;
+  if (secs <= cfg.par) stars++;
+  if (st.score >= cfg.maxBase * 0.6) stars++;
+  totalStars += stars;
+  bestStars[stageId] = Math.max(bestStars[stageId] || 0, stars);
+  saveJSON('assai_stars', bestStars);
+  if (stars === 3) unlock('stars');
+  nextStageId = stageId === 2 && viaSecret ? 'S' : cfg.next;
+
+  $('result-title').textContent = viaSecret ? t('secret_found') : t('result_title');
+  $('result-stage').textContent = `${t('stage_word')} ${cfg.code} · ${t(cfg.key)}`;
+  const starEls = $('result-stars').querySelectorAll('span');
+  starEls.forEach((s) => s.classList.remove('on'));
+  starEls.forEach((s, i) => { if (i < stars) setTimeout(() => { s.classList.add('on'); Audio8.sfx.coin(); }, 400 + i * 420); });
+  const rows = [
+    [t('r_time'), `${fmtTime(st.frames)} <small>(${t('r_par')} ${fmtTime(cfg.par * 60)})</small>`],
+    [t('r_lanterns'), `${st.lanterns}/${lanterns.length}`],
+    [t('r_enemies'), `${st.enemies}/${enemies.length}`],
+    [t('r_flowers'), `${st.flowers}/${flowers.length}`],
+    [t('r_score'), Math.max(0, st.score)],
+    [t('r_timebonus'), '+' + timeBonus],
+  ];
+  $('result-stats').innerHTML = rows.map(([k, v]) => `<span>${k}</span><span class="v">${v}</span>`).join('');
+  $('result-screen').classList.remove('hidden');
+  updateHUD();
+}
+
+function continueAfterResult() {
+  $('result-screen').classList.add('hidden');
+  if (nextStageId === 'end') { endGame(true); return; }
+  loadStage(nextStageId);
+  state = 'playing';
+  keys.Space = false; jumpHeld = true;
+  updateMobileControls();
+  showBanner();
+}
+
+function endGame(won) {
+  state = won ? 'won' : 'gameover';
+  updateMobileControls();
+  Audio8.stopMusic();
+  if (won) { Audio8.sfx.win(); if (!tookDamage) unlock('nohit'); } else Audio8.sfx.gameover();
+  const name = selectedCharacter === 'male' ? 'Sora' : 'Riku';
+  $('end-title').textContent = won ? t('victory') : t('gameover');
+  $('end-message').textContent = t(won ? 'end_win' : 'end_lose', { name });
+  $('final-score-val').textContent = score;
+  $('final-stars-val').textContent = totalStars + ' ★';
+  $('save-msg').classList.add('hidden');
+  refreshNameRow();
+  renderRanking($('end-ranking'), 5);
+  $('end-screen').classList.remove('hidden');
+  if (hostPlayer) saveScore();
+  if (typeof window.AventurasAssai.onGameEnd === 'function') {
+    window.AventurasAssai.onGameEnd({
+      playerId: hostPlayer ? hostPlayer.id : null, score, stars: totalStars, won,
+      character: name, timeSeconds: Math.round(totalFrames / 60), achievements: { ...achievements }, secretFound,
     });
   }
 }
 
-function showStageBanner(code, name) {
-  if (stageBannerTimeout) clearTimeout(stageBannerTimeout);
-  stageBannerSub.textContent = `FASE ${code}`;
-  stageBannerTitle.textContent = name;
-  stageBanner.classList.remove('hidden');
-  stageBannerTimeout = setTimeout(() => {
-    stageBanner.classList.add('hidden');
-  }, 2200);
+// ================= Pontuação e efeitos =================
+function addScore(n, x, y, color) {
+  score = Math.max(0, score + n);
+  st.score += n;
+  popups.push({ x, y, text: (n > 0 ? '+' : '') + n, life: 50, color: color || (n > 0 ? '#ffd84d' : '#ff5d5d') });
 }
 
-function loadStage(stageNum, resetStats = false) {
-  currentStage = stageNum;
-  const cfg = STAGES[stageNum];
-  worldWidth = cfg.worldWidth;
-  goalX = cfg.goalX;
-  cameraX = 0;
-  lightParticles = [];
-
-  if (resetStats) {
-    score = 0;
-    coins = 0;
-    lives = 3;
+function burst(cx, cy, count, colors, speed = 1.4) {
+  for (let i = 0; i < count; i++) {
+    const a = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+    const v = 0.4 + Math.random() * speed;
+    particles.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.4, life: 30 + Math.random() * 30, max: 60, c: colors[i % colors.length], s: Math.random() > 0.6 ? 2 : 1, up: true });
   }
+}
 
-  player = {
-    x: 80,
-    y: GROUND_Y - 58,
-    w: 44,
-    h: 58,
-    vx: 0,
-    vy: 0,
-    speed: 4.6,
-    jumpForce: -12.8,
-    onGround: false,
-    facingRight: true,
-    invincibleTimer: 0,
-  };
-
-  platforms = cfg.platforms.map((p) => ({
-    ...p,
-    baseX: p.x,
-    baseY: p.y,
-    dx: 0,
-    dy: 0,
-  }));
-  lanterns = cfg.lanterns.map((l) => ({ ...l, lit: false }));
-  collectibles = cfg.collectibles.map((c) => ({ ...c, collected: false }));
-  enemies = cfg.enemies.map((e) => ({
-    ...e,
-    y: GROUND_Y - 30,
-    w: 36,
-    h: 30,
-    alive: true,
-  }));
-  toriis = [...cfg.toriis];
-  trees = cfg.trees.map((t) => ({ ...t }));
-
-  if (petals.length === 0) {
-    petals = Array.from({ length: 38 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: -0.4 - Math.random() * 0.6,
-      vy: 0.7 + Math.random() * 1.0,
-      color: Math.random() > 0.35 ? '#fbcfe8' : '#fef08a',
-      size: Math.random() > 0.5 ? 4 : 3,
-    }));
+function hitLantern(l) {
+  if (l.lit) {
+    burst(l.x + 5, l.y + 8, 6, ['#fff', '#ffd84d']);
+    return;
   }
+  l.lit = true;
+  st.lanterns++;
+  addScore(l.golden ? 500 : 300, l.x + 5, l.y - 4);
+  Audio8.sfx.lantern();
+  burst(l.x + 5, l.y + 8, 22, ['#ffffff', '#fff1a8', '#ffd84d', '#fb923c', '#fda4af'], 2.2);
+  if (lanterns.every((x) => x.lit)) {
+    score += 500; st.score += 500;
+    toast('🏮 ' + t('toast_lanterns'));
+    unlock('lanterns');
+  }
+}
 
+function hurt(e) {
+  lives--;
+  tookDamage = true;
+  addScore(-150, player.x + 6, player.y - 4);
+  Audio8.sfx.hurt();
+  player.inv = 100;
+  player.vy = -3;
+  player.vx = (player.x + 6 < e.x + 7 ? -1 : 1) * 2.4;
+  burst(player.x + 6, player.y + 8, 10, ['#ff5d5d', '#ffffff']);
   updateHUD();
+  if (lives <= 0) { updateHUD(); setTimeout(() => endGame(false), 400); state = 'gameover'; }
 }
 
-function updateHUD() {
-  hudScore.textContent = String(score).padStart(5, '0');
-  hudCoins.textContent = 'x' + String(coins).padStart(2, '0');
-  hudWorld.textContent = STAGES[currentStage].code;
-  hudLives.textContent = 'x' + String(lives).padStart(2, '0');
-}
+const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
-function showIntroDialogue() {
-  const isSora = selectedCharacter === 'male';
-  dialogueSpeaker.textContent = isSora ? 'SORA' : 'RIKU';
-  dialogueSpeaker.style.background = isSora ? '#1d4ed8' : '#be185d';
-  dialogueAvatarImg.src = isSora ? 'assets/portrait-sora.png' : 'assets/portrait-riku.png';
-
-  const fullText = isSora
-    ? 'Ei, você aí do outro lado da tela! Eu sou o Sora! Preciso atravessar 3 regiões de Assaí para chegar ao Castelo Japonês. Pode me ajudar nessa aventura?'
-    : 'Oi, você aí olhando pra tela! Eu sou a Riku! Preciso da sua ajuda para atravessar as 3 fases por Assaí e chegar ao Castelo Japonês. Vamos juntos?';
-
-  dialogueText.textContent = '';
-  dialogueBox.classList.remove('hidden');
-  sfx.talk();
-
-  if (typewriterTimer) clearInterval(typewriterTimer);
-  let idx = 0;
-  typewriterTimer = setInterval(() => {
-    idx++;
-    dialogueText.textContent = fullText.slice(0, idx);
-    if (idx >= fullText.length) {
-      clearInterval(typewriterTimer);
-      typewriterTimer = null;
-    }
-  }, 24);
-}
-
-function closeIntroDialogue() {
-  if (gameState !== 'intro') return;
-  if (typewriterTimer) {
-    clearInterval(typewriterTimer);
-    typewriterTimer = null;
-  }
-  dialogueBox.classList.add('hidden');
-  gameState = 'playing';
-  updateMobileControlsVisibility();
-  playTone(784, 0.08);
-  showStageBanner(STAGES[1].code, STAGES[1].name);
-}
-
-function startGame(withIntro = true) {
-  loadStage(1, true);
-  menuScreen.classList.add('hidden');
-  endScreen.classList.add('hidden');
-  hud.classList.remove('hidden');
-
-  if (withIntro) {
-    gameState = 'intro';
-    updateMobileControlsVisibility();
-    showIntroDialogue();
-  } else {
-    dialogueBox.classList.add('hidden');
-    gameState = 'playing';
-    updateMobileControlsVisibility();
-    showStageBanner(STAGES[1].code, STAGES[1].name);
-  }
-}
-
-function endGame(won) {
-  const charName = selectedCharacter === 'male' ? 'Sora' : 'Riku';
-  gameState = won ? 'won' : 'gameover';
-  updateMobileControlsVisibility();
-  stageBanner.classList.add('hidden');
-  if (won) {
-    sfx.win();
-    endTitle.textContent = 'VITÓRIA!';
-    endMessage.textContent = `Incrível! Você guiou ${charName} pelas 3 fases até o Castelo Japonês de Assaí!`;
-  } else {
-    endTitle.textContent = 'FIM DE JOGO';
-    endMessage.textContent = `Não desista! Tente novamente ajudar ${charName} a chegar ao Castelo Japonês!`;
-  }
-  finalScoreVal.textContent = score;
-  endScreen.classList.remove('hidden');
-}
-
+// ================= Atualização =================
 function updatePetals() {
-  for (const pt of petals) {
-    pt.x += pt.vx;
-    pt.y += pt.vy;
-    if (pt.y > GROUND_Y) {
-      pt.y = -10;
-      pt.x = Math.random() * canvas.width;
-    }
-    if (pt.x < 0) pt.x = canvas.width;
-  }
-}
-
-function updateLightParticles() {
-  for (let i = lightParticles.length - 1; i >= 0; i--) {
-    const p = lightParticles[i];
-    p.x += p.vx;
+  for (const p of petals) {
+    p.x += p.vx + Math.sin((frame + p.y) * 0.03) * 0.15;
     p.y += p.vy;
-    p.vy -= 0.03; // Sobe suavemente como vaga-lume / luz mágica
-    p.vx *= 0.97;
-    p.life--;
-    if (p.life <= 0) {
-      lightParticles.splice(i, 1);
-    }
-  }
-
-  // Lanternas já acesas soltam pequenas faíscas de luz continuamente
-  if (frameCount % 16 === 0) {
-    for (const l of lanterns) {
-      if (l.lit) {
-        lightParticles.push({
-          x: l.x + l.w / 2 + (Math.random() - 0.5) * 18,
-          y: l.y + 12 + (Math.random() - 0.5) * 12,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: -0.6 - Math.random() * 0.7,
-          life: 28,
-          maxLife: 28,
-          size: 3,
-          color: Math.random() > 0.5 ? '#fef08a' : '#ffffff',
-        });
-      }
-    }
+    if (p.y > H) { p.y = -2; p.x = Math.random() * (W + 40); }
+    if (p.x < -4) p.x = W + 2;
   }
 }
 
 function update() {
-  frameCount++;
+  frame++;
   updatePetals();
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vx *= 0.96; p.vy += p.up ? -0.02 : 0.08;
+    if (--p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) { popups[i].y -= 0.4; if (--popups[i].life <= 0) popups.splice(i, 1); }
+  if (state !== 'playing') return;
 
-  if (gameState !== 'playing') return;
+  st.frames++;
+  totalFrames++;
 
-  updateLightParticles();
+  // Entrada
+  const left = keys.ArrowLeft || keys.KeyA, right = keys.ArrowRight || keys.KeyD;
+  const jumpNow = !!(keys.Space || keys.ArrowUp || keys.KeyW);
+  if (jumpNow && !jumpHeld) jumpBuffer = 7;
+  jumpHeld = jumpNow;
+  if (jumpBuffer > 0) jumpBuffer--;
 
-  // Movimento horizontal
-  if (keys['ArrowRight'] || keys['KeyD']) {
-    player.vx = player.speed;
-    player.facingRight = true;
-  } else if (keys['ArrowLeft'] || keys['KeyA']) {
-    player.vx = -player.speed;
-    player.facingRight = false;
-  } else {
-    player.vx *= 0.75;
-    if (Math.abs(player.vx) < 0.2) player.vx = 0;
+  if (right && !left) { player.vx = Math.min(SPEED, player.vx + ACC); player.facing = 1; }
+  else if (left && !right) { player.vx = Math.max(-SPEED, player.vx - ACC); player.facing = -1; }
+  else { player.vx *= 0.7; if (Math.abs(player.vx) < 0.05) player.vx = 0; }
+
+  coyote = player.onGround ? 6 : Math.max(0, coyote - 1);
+  if (jumpBuffer > 0 && coyote > 0) {
+    player.vy = JUMP; player.onGround = false; coyote = 0; jumpBuffer = 0; player.standOn = null;
+    Audio8.sfx.jump();
+  }
+  if (!jumpNow && player.vy < JUMP_CUT) player.vy = JUMP_CUT;
+  player.vy = Math.min(MAXFALL, player.vy + GRAV);
+
+  // Plataformas móveis
+  for (const p of platforms) {
+    const ox = p.x, oy = p.y;
+    if (p.mx) p.x = p.bx + Math.sin(frame * p.sp) * p.mx;
+    if (p.my) p.y = p.by + Math.sin(frame * p.sp) * p.my;
+    p.dx = p.x - ox; p.dy = p.y - oy;
   }
 
-  // Pulo
-  if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.onGround) {
-    player.vy = player.jumpForce;
-    player.onGround = false;
-    sfx.jump();
-  }
-
-  // Gravidade
-  player.vy += GRAVITY;
-  if (player.vy > 14) player.vy = 14;
-
-  // Atualiza X
+  const prevBottom = player.y + player.h, prevTop = player.y;
+  const wasOn = player.standOn;
+  if (wasOn) player.x += wasOn.dx;
   player.x += player.vx;
-  if (player.x < 0) player.x = 0;
-  if (player.x + player.w > worldWidth) player.x = worldWidth - player.w;
-
-  // Atualiza Y
+  player.x = Math.max(0, Math.min(cfg.width - player.w, player.x));
   player.y += player.vy;
   player.onGround = false;
+  player.standOn = null;
 
-  // Colisão com o chão
-  if (player.y + player.h >= GROUND_Y) {
-    player.y = GROUND_Y - player.h;
-    player.vy = 0;
-    player.onGround = true;
-  }
+  if (player.y + player.h >= GY) { player.y = GY - player.h; player.vy = 0; player.onGround = true; }
 
-  // Atualiza plataformas móveis
   for (const p of platforms) {
-    const prevX = p.x;
-    const prevY = p.y;
-    if (p.moveX) {
-      p.x = p.baseX + Math.sin(frameCount * (p.speed || 0.03)) * p.moveX;
-    }
-    if (p.moveY) {
-      p.y = p.baseY + Math.sin(frameCount * (p.speed || 0.035)) * p.moveY;
-    }
-    p.dx = p.x - prevX;
-    p.dy = p.y - prevY;
-  }
-
-  // Colisão com plataformas (acompanha plataformas móveis)
-  for (const p of platforms) {
-    if (
-      player.vy >= 0 &&
-      player.x + player.w > p.x &&
-      player.x < p.x + p.w &&
-      player.y + player.h >= p.y - 4 &&
-      player.y + player.h <= p.y + p.h + 12
-    ) {
-      player.y = p.y - player.h;
-      player.x += p.dx;
-      player.vy = 0;
-      player.onGround = true;
+    const hOver = player.x + player.w > p.x + 1 && player.x < p.x + p.w - 1;
+    if (!hOver || player.vy < 0) continue;
+    const landed = prevBottom <= p.y - p.dy + 2 && player.y + player.h >= p.y;
+    const stuck = wasOn === p && player.y + player.h >= p.y - 3;
+    if (landed || stuck) {
+      player.y = p.y - player.h; player.vy = 0; player.onGround = true; player.standOn = p;
     }
   }
 
-  // Colisão com Lanternas Japonesas (ao bater a cabeça, acende e solta luzes!)
+  // Lanternas: bater a cabeça acende!
   for (const l of lanterns) {
-    if (
-      player.x + player.w > l.x &&
-      player.x < l.x + l.w &&
-      player.y < l.y + l.h &&
-      player.y + player.h > l.y
-    ) {
-      if (player.vy < 0 && player.y > l.y + l.h * 0.45) {
-        player.y = l.y + l.h;
-        player.vy = 1.5;
-        if (!l.lit) {
-          l.lit = true;
-          coins++;
-          score += 150;
-          sfx.lantern();
-          spawnLanternLights(l.x + l.w / 2, l.y + l.h / 2, 22);
-          updateHUD();
-        } else {
-          // Mesmo já acesa, solta um punhado extra de faíscas se bater de novo
-          spawnLanternLights(l.x + l.w / 2, l.y + l.h / 2, 8);
-          playTone(880, 0.06, 'sine', 0.06);
-        }
-      } else if (player.vy >= 0 && player.y + player.h <= l.y + 14) {
-        player.y = l.y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-      }
+    if (!overlap(player, l)) continue;
+    if (player.vy < 0 && prevTop >= l.y + l.h - 3) { player.y = l.y + l.h; player.vy = 0.6; hitLantern(l); }
+    else if (player.vy >= 0 && prevBottom <= l.y + 3) { player.y = l.y - player.h; player.vy = 0; player.onGround = true; }
+  }
+
+  // Flores de sakura
+  for (const f of flowers) {
+    if (f.got) continue;
+    if (Math.abs(player.x + 6 - f.x) < 9 && Math.abs(player.y + 10 - f.y) < 12) {
+      f.got = true; sakuraCount++; st.flowers++;
+      addScore(50, f.x, f.y - 6, '#fbcfe8');
+      Audio8.sfx.coin();
+      burst(f.x, f.y, 6, ['#fbcfe8', '#f472b6']);
     }
   }
 
-  // Coletáveis (Flores de Sakura)
-  for (const c of collectibles) {
-    if (!c.collected) {
-      const dx = player.x + player.w / 2 - c.x;
-      const dy = player.y + player.h / 2 - c.y;
-      if (Math.hypot(dx, dy) < 30) {
-        c.collected = true;
-        coins++;
-        score += 50;
-        sfx.coin();
-        updateHUD();
-      }
-    }
-  }
-
-  // Inimigos
-  if (player.invincibleTimer > 0) player.invincibleTimer--;
-
+  // Bichinhos
+  if (player.inv > 0) player.inv--;
   for (const e of enemies) {
-    if (!e.alive) continue;
+    if (e.dead) { if (e.squash > 0) e.squash--; continue; }
     e.x += e.vx;
-    if (e.x <= e.minX || e.x + e.w >= e.maxX) e.vx *= -1;
-
-    if (
-      player.x + player.w > e.x &&
-      player.x < e.x + e.w &&
-      player.y + player.h > e.y &&
-      player.y < e.y + e.h
-    ) {
-      if (player.vy > 0 && player.y + player.h - player.vy <= e.y + 14) {
-        e.alive = false;
-        player.vy = -9;
-        score += 200;
-        sfx.stomp();
-        updateHUD();
-      } else if (player.invincibleTimer === 0) {
-        lives--;
-        sfx.hurt();
-        updateHUD();
-        if (lives <= 0) {
-          endGame(false);
-          return;
-        }
-        player.invincibleTimer = 90;
-        player.vy = -7;
+    if (e.x <= e.min) { e.x = e.min; e.vx = Math.abs(e.vx); }
+    if (e.x + e.w >= e.max) { e.x = e.max - e.w; e.vx = -Math.abs(e.vx); }
+    if (!overlap(player, e)) continue;
+    if (player.vy > 0 && prevBottom <= e.y + 4) {
+      e.dead = true; e.squash = 40; st.enemies++;
+      player.vy = jumpNow ? -4.6 : -3.4;
+      addScore(400, e.x + 7, e.y - 6);
+      Audio8.sfx.stomp();
+      burst(e.x + 7, e.y + 4, 10, ['#ffffff', '#f5b301', '#dc2626']);
+      if (enemies.every((x) => x.dead)) {
+        score += 500; st.score += 500;
+        toast('🐞 ' + t('toast_enemies'));
+        unlock('enemies');
       }
+    } else if (player.inv === 0) {
+      hurt(e);
+      if (state !== 'playing') return;
+    }
+  }
+
+  // Fase secreta
+  if (cfg.secret && !secretFound) {
+    const s = cfg.secret;
+    if (overlap(player, { x: s.x - 11, y: s.y - 28, w: 22, h: 28 })) {
+      secretFound = true;
+      Audio8.sfx.secret();
+      unlock('secret');
+      burst(s.x, s.y - 14, 30, ['#ffd84d', '#ffffff', '#f472b6'], 2.4);
+      completeStage(true);
+      return;
     }
   }
 
   // Câmera
-  cameraX = player.x - canvas.width * 0.35;
-  if (cameraX < 0) cameraX = 0;
-  if (cameraX > worldWidth - canvas.width) cameraX = worldWidth - canvas.width;
+  const target = player.x + 6 - W * 0.4;
+  camX += (target - camX) * 0.18;
+  camX = Math.max(0, Math.min(cfg.width - W, camX));
 
-  // Fim de cada fase
-  if (player.x >= goalX) {
-    if (currentStage < 3) {
-      score += 300;
-      sfx.stageClear();
-      loadStage(currentStage + 1, false);
-      showStageBanner(STAGES[currentStage].code, STAGES[currentStage].name);
-    } else {
-      score += 1000;
-      updateHUD();
-      endGame(true);
+  if (frame % 6 === 0) updateHUD();
+
+  // Objetivo
+  if (player.x + player.w / 2 >= cfg.goalX) completeStage(false);
+}
+
+// ================= Desenho do cenário =================
+function bandedSky(colors, bottom = GY) {
+  const bh = Math.ceil(bottom / colors.length);
+  colors.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, i * bh, W, bh + 1); });
+}
+
+function drawStars() {
+  for (const s of STARS_BG) {
+    const a = 0.45 + Math.sin(frame * 0.05 + s.ph) * 0.45;
+    ctx.fillStyle = `rgba(254,249,195,${a.toFixed(2)})`;
+    ctx.fillRect(s.x, s.y, 1, 1);
+    if (s.big) { ctx.fillRect(s.x - 1, s.y, 3, 1); ctx.fillRect(s.x, s.y - 1, 1, 3); }
+  }
+}
+
+function drawMoon(x, y, col = '#fef3c7') {
+  ctx.fillStyle = 'rgba(254,243,199,0.12)';
+  pxCircle(ctx, x, y, 17, 'rgba(254,243,199,0.10)');
+  pxCircle(ctx, x, y, 14, 'rgba(254,243,199,0.12)');
+  pxCircle(ctx, x, y, 11, col);
+  ctx.fillStyle = '#e8dcae'; ctx.fillRect(x - 5, y - 3, 3, 2); ctx.fillRect(x + 2, y + 2, 4, 3); ctx.fillRect(x - 2, y + 5, 2, 2);
+}
+
+const CLOUDS = [[20, 22], [120, 12], [210, 30], [300, 16], [400, 26]];
+function drawClouds(off) {
+  for (const [cx, cy] of CLOUDS) {
+    const x = Math.floor((((cx - off) % 480) + 480) % 480) - 48;
+    ctx.fillStyle = theme.cloudsS; ctx.fillRect(x, cy + 7, 26, 2);
+    ctx.fillStyle = theme.clouds; ctx.fillRect(x, cy + 3, 26, 4); ctx.fillRect(x + 4, cy, 12, 4); ctx.fillRect(x + 13, cy - 2, 9, 5);
+  }
+}
+
+const CITY = [
+  { x: 0, w: 22, h: 20, t: 'house' }, { x: 24, w: 14, h: 34, t: 'bld' }, { x: 40, w: 26, h: 16, t: 'house' }, { x: 70, w: 8, h: 46, t: 'tower' },
+  { x: 82, w: 30, h: 18, t: 'house' }, { x: 114, w: 18, h: 28, t: 'bld' }, { x: 136, w: 6, h: 22, t: 'palm' }, { x: 146, w: 28, h: 15, t: 'house' },
+  { x: 178, w: 16, h: 40, t: 'bld' }, { x: 198, w: 24, h: 18, t: 'house' }, { x: 226, w: 12, h: 32, t: 'water' }, { x: 242, w: 26, h: 16, t: 'house' },
+  { x: 272, w: 18, h: 26, t: 'bld' }, { x: 294, w: 6, h: 20, t: 'palm' }, { x: 304, w: 30, h: 17, t: 'house' }, { x: 338, w: 16, h: 36, t: 'bld' },
+  { x: 358, w: 26, h: 15, t: 'house' },
+];
+const CITY_COL = {
+  day: { wall: '#e6edf5', wall2: '#cfdbe8', roof: '#d9825b', bld: '#c3d0de', win: '#8aa4c0', tower: '#9aa8b8', palm: '#5e9a6a' },
+  sunset: { wall: '#e7b7a6', wall2: '#d39b8f', roof: '#a8463a', bld: '#c48f93', win: '#7a4a6a', tower: '#8a5a6e', palm: '#4b5e3a' },
+  night: { wall: '#24325a', wall2: '#1e2a4c', roof: '#2b1f3a', bld: '#1b2647', win: '#fcd34d', tower: '#34436a', palm: '#15302a' },
+  secret: { wall: '#e9b8d2', wall2: '#d49cbc', roof: '#9d3f6e', bld: '#cf9ec0', win: '#fff1a8', tower: '#a06a92', palm: '#6b4a6a' },
+};
+function drawCity(off, baseY, th) {
+  const c = CITY_COL[th];
+  const night = th === 'night';
+  const o = ((off % 384) + 384) % 384;
+  for (const rep of [-384, 0]) {
+    for (const b of CITY) {
+      const x = Math.floor(b.x + rep + o);
+      if (x > W || x + b.w < 0) continue;
+      const top = baseY - b.h;
+      if (b.t === 'house') {
+        ctx.fillStyle = c.wall; ctx.fillRect(x, top + 4, b.w, b.h - 4);
+        ctx.fillStyle = c.roof; ctx.fillRect(x - 1, top + 1, b.w + 2, 3); ctx.fillRect(x + 1, top, b.w - 2, 1);
+        ctx.fillStyle = c.win;
+        for (let wx = 3; wx < b.w - 3; wx += 6) if (!night || (b.x + wx) % 3) ctx.fillRect(x + wx, top + 7, 2, 2);
+      } else if (b.t === 'bld') {
+        ctx.fillStyle = c.bld; ctx.fillRect(x, top, b.w, b.h);
+        ctx.fillStyle = c.wall2; ctx.fillRect(x + b.w - 2, top, 2, b.h);
+        ctx.fillStyle = c.win;
+        for (let wy = 3; wy < b.h - 3; wy += 5) for (let wx = 2; wx < b.w - 3; wx += 4) if (!night || (wx * 3 + wy + b.x) % 5 < 3) ctx.fillRect(x + wx, top + wy, 2, 2);
+      } else if (b.t === 'tower') {
+        ctx.fillStyle = c.tower; ctx.fillRect(x + 1, top, 1, b.h); ctx.fillRect(x + 6, top, 1, b.h);
+        for (let k = 0; k < b.h; k += 5) ctx.fillRect(x + 1, top + k, 6, 1);
+        ctx.fillStyle = Math.floor(frame / 30) % 2 ? '#ef4444' : '#7f1d1d'; ctx.fillRect(x + 3, top - 2, 2, 2);
+      } else if (b.t === 'water') {
+        ctx.fillStyle = c.tower; ctx.fillRect(x + 5, top + 8, 2, b.h - 8); ctx.fillRect(x + 2, top + 16, 8, 1);
+        ctx.fillStyle = c.bld; ctx.fillRect(x, top, 12, 8); ctx.fillStyle = c.wall2; ctx.fillRect(x, top + 6, 12, 2);
+      } else if (b.t === 'palm') {
+        ctx.fillStyle = c.tower; ctx.fillRect(x + 3, top + 3, 1, b.h - 3);
+        ctx.fillStyle = c.palm; ctx.fillRect(x, top + 1, 7, 2); ctx.fillRect(x + 1, top, 5, 1); ctx.fillRect(x - 1, top + 3, 2, 1); ctx.fillRect(x + 6, top + 3, 2, 1);
+      }
     }
   }
 }
 
-// Céu noturno com lua cheia e estrelas (usado na Tela Inicial e na Fase 3)
-function drawNightSkyAndMoon() {
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  skyGrad.addColorStop(0, '#091128');
-  skyGrad.addColorStop(0.55, '#172a56');
-  skyGrad.addColorStop(1, '#1e3a6d');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Estrelas piscando
-  for (const st of STARS) {
-    const alpha = 0.45 + Math.sin(frameCount * 0.05 + st.phase) * 0.45;
-    ctx.fillStyle = `rgba(254, 249, 195, ${alpha.toFixed(2)})`;
-    ctx.fillRect(st.x, st.y, st.size, st.size);
-  }
-
-  // Lua Cheia brilhando no canto superior direito
-  const moonX = 810;
-  const moonY = 92;
-  const halo = ctx.createRadialGradient(moonX, moonY, 18, moonX, moonY, 84);
-  halo.addColorStop(0, 'rgba(254, 249, 195, 0.45)');
-  halo.addColorStop(1, 'rgba(254, 249, 195, 0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, 84, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#fef9c3';
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, 32, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#e2e8f0';
-  ctx.fillRect(moonX - 12, moonY - 8, 8, 6);
-  ctx.fillRect(moonX + 6, moonY + 4, 10, 8);
-}
-
-// Cenário da Tela Inicial Estilo RPG Noturno com o Castelo Japonês real de Assaí
-function drawMenuBackground() {
-  drawNightSkyAndMoon();
-
-  // Silhueta das colinas noturnas
-  ctx.fillStyle = '#0f2147';
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y + 40);
-  ctx.quadraticCurveTo(220, 310, 480, 380);
-  ctx.quadraticCurveTo(740, 290, 960, GROUND_Y + 40);
-  ctx.fill();
-
-  // Castelo Japonês real de Assaí imponente no fundo da tela inicial!
-  drawJapaneseCastle(ctx, 290, 220, 2.05, true);
-
-  // Galhos de cerejeira nos cantos superiores (inspirado na referência!)
-  drawSakuraCornerBranch(ctx, canvas.width, false);
-  drawSakuraCornerBranch(ctx, canvas.width, true);
-
-  // Pétalas caindo
-  for (const pt of petals) {
-    ctx.fillStyle = pt.color;
-    ctx.fillRect(Math.floor(pt.x), Math.floor(pt.y), pt.size, pt.size);
+function drawHills(scroll, base, amp, k, color, phase = 0) {
+  ctx.fillStyle = color;
+  for (let x = 0; x < W; x += 2) {
+    const wx = x + scroll;
+    const h = Math.floor(base + Math.sin(wx * k + phase) * amp + Math.sin(wx * k * 2.3 + phase * 2) * amp * 0.4);
+    ctx.fillRect(x, GY - h, 2, h);
   }
 }
 
-// Portal Torii de transição entre Fase 1->2 e Fase 2->3
-function drawStageGoalPortal(ctx, x, groundY, stageNum) {
-  // Brilho mágico atrás do portal
-  const pulse = 1 + Math.sin(frameCount * 0.1) * 0.1;
-  const grad = ctx.createRadialGradient(x, groundY - 60, 10, x, groundY - 60, 75 * pulse);
-  grad.addColorStop(0, 'rgba(250, 204, 21, 0.55)');
-  grad.addColorStop(1, 'rgba(250, 204, 21, 0)');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(x, groundY - 60, 75 * pulse, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawToriiBack(ctx, x, groundY);
-  drawToriiFront(ctx, x, groundY);
-
-  // Plaquinha indicando próxima fase
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(x - 46, groundY - 154, 92, 22);
-  ctx.strokeStyle = '#facc15';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x - 46, groundY - 154, 92, 22);
-  ctx.fillStyle = '#fef08a';
-  ctx.font = '8px "Press Start 2P", monospace';
-  ctx.fillText(`FASE 1-${stageNum + 1} >`, x - 40, groundY - 140);
-}
-
-// Laguinho de fundo do Parque Ikeda (Assaí) — inspirado na foto real com ponte e Torii iluminado
-function drawParqueIkedaLake() {
-  const lakeTop = 378;
-  const lakeHeight = GROUND_Y - lakeTop;
-  const parallax = -(cameraX * 0.12) % 960;
-
-  // Água do lago com gradiente refletindo o pôr do sol
-  const waterGrad = ctx.createLinearGradient(0, lakeTop, 0, GROUND_Y);
-  waterGrad.addColorStop(0, '#312e81');
-  waterGrad.addColorStop(0.5, '#1e3a5f');
-  waterGrad.addColorStop(1, '#0f172a');
-  ctx.fillStyle = waterGrad;
-  ctx.fillRect(0, lakeTop, canvas.width, lakeHeight);
-
-  // Ponte de Assaí sobre o lago (lado direito do lago)
-  const bridgeX = 480 + parallax * 0.6;
-  ctx.fillStyle = '#475569';
-  ctx.fillRect(bridgeX, lakeTop - 16, 420, 6);
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillRect(bridgeX, lakeTop - 18, 420, 2);
-  for (let px = 0; px < 420; px += 38) {
-    // Pilastras da ponte
-    ctx.fillStyle = '#334155';
-    ctx.fillRect(bridgeX + px, lakeTop - 10, 6, 22);
-    // Luzinhas refletidas na água
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.7)';
-    ctx.fillRect(bridgeX + px + 1, lakeTop - 15, 4, 3);
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.25)';
-    ctx.fillRect(bridgeX + px, lakeTop + 4, 6, 18);
-  }
-
-  // Torii Vermelho Iluminado no meio do Lago (cartão-postal do Parque Ikeda!)
-  const toriiX = 330 + parallax * 0.6;
-  const glow = ctx.createRadialGradient(toriiX, lakeTop - 12, 6, toriiX, lakeTop - 12, 72);
-  glow.addColorStop(0, 'rgba(255, 87, 34, 0.65)');
-  glow.addColorStop(1, 'rgba(255, 87, 34, 0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(toriiX, lakeTop - 12, 72, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Estrutura do Torii no lago
-  ctx.fillStyle = '#ef4444';
-  ctx.fillRect(toriiX - 24, lakeTop - 52, 7, 56);
-  ctx.fillRect(toriiX + 17, lakeTop - 52, 7, 56);
-  ctx.fillRect(toriiX - 34, lakeTop - 44, 68, 6);
-  ctx.fillStyle = '#ff5722';
-  ctx.fillRect(toriiX - 40, lakeTop - 58, 80, 9);
-
-  // Reflexo vermelho tremulando na água
-  for (let ry = 0; ry < 46; ry += 5) {
-    const wave = Math.sin(frameCount * 0.08 + ry * 0.4) * 5;
-    const alpha = Math.max(0.08, 0.55 - ry * 0.01);
-    ctx.fillStyle = `rgba(255, 69, 58, ${alpha.toFixed(2)})`;
-    ctx.fillRect(toriiX - 26 + wave, lakeTop + 4 + ry, 52 - ry * 0.4, 3);
-  }
-
-  // Ondinhas suaves na superfície do lago
-  ctx.fillStyle = 'rgba(254, 215, 170, 0.28)';
-  for (let i = 0; i < 16; i++) {
-    const wx = ((i * 85 + frameCount * 0.4) % (canvas.width + 60)) - 30;
-    const wy = lakeTop + 8 + (i % 5) * 14;
-    ctx.fillRect(Math.floor(wx), wy, 26, 2);
+function drawBushes(scroll, color) {
+  const o = ((scroll % 64) + 64) % 64;
+  ctx.fillStyle = color;
+  for (let x = -o - 64; x < W + 64; x += 64) {
+    ctx.fillRect(x, GY - 5, 22, 5); ctx.fillRect(x + 3, GY - 8, 15, 3); ctx.fillRect(x + 7, GY - 10, 7, 2);
+    ctx.fillRect(x + 34, GY - 4, 14, 4); ctx.fillRect(x + 37, GY - 6, 8, 2);
   }
 }
 
-function draw() {
-  if (gameState === 'menu') {
-    drawMenuBackground();
-    return;
+// Laguinho do Parque Ikeda: Torii iluminado na água e ponte apoiada sobre o lago
+function drawLake(cam) {
+  const top = 152;
+  const bands = ['#6b4f9e', '#53418f', '#3f3480', '#2e2a6e'];
+  const bh = Math.ceil((GY - top) / bands.length);
+  bands.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, top + i * bh, W, bh); });
+  // margem ao fundo
+  ctx.fillStyle = '#2f4a2c'; ctx.fillRect(0, top - 2, W, 2);
+  ctx.fillStyle = '#3b5e36'; for (let x = 0; x < W; x += 6) ctx.fillRect(x, top - 4, 4, 2);
+
+  const o = -((cam * 0.4) % 384);
+  for (const rep of [0, 384]) {
+    const base = Math.floor(o + rep);
+    // Torii vermelho no lago
+    const tx = base + 110;
+    if (tx > -60 && tx < W + 60) {
+      const glow = ctx.createRadialGradient(tx, top - 6, 2, tx, top - 6, 34);
+      glow.addColorStop(0, 'rgba(255,90,60,0.45)'); glow.addColorStop(1, 'rgba(255,90,60,0)');
+      ctx.fillStyle = glow; ctx.fillRect(tx - 34, top - 40, 68, 70);
+      ctx.fillStyle = '#ff3b2f'; ctx.fillRect(tx - 10, top - 24, 2, 28); ctx.fillRect(tx + 8, top - 24, 2, 28);
+      ctx.fillRect(tx - 12, top - 19, 24, 2);
+      ctx.fillStyle = '#ff6a3d'; ctx.fillRect(tx - 15, top - 26, 30, 3);
+      ctx.fillStyle = '#7f1d1d'; ctx.fillRect(tx - 16, top - 27, 3, 1); ctx.fillRect(tx + 13, top - 27, 3, 1);
+      // luzinhas na água em volta do torii
+      ctx.fillStyle = '#ffd1a1';
+      for (let i = -3; i <= 3; i++) ctx.fillRect(tx + i * 7, top + 2 + (i % 2), 1, 1);
+      // reflexo tremulando
+      for (let r = 0; r < 12; r++) {
+        const wave = Math.round(Math.sin(frame * 0.1 + r) * 1.5);
+        ctx.fillStyle = `rgba(255,80,60,${(0.5 - r * 0.035).toFixed(2)})`;
+        ctx.fillRect(tx - 12 + wave, top + 4 + r * 2, 24 - r, 1);
+      }
+    }
+    // Ponte sobre o lago (com pilares mergulhados na água e margens nas pontas)
+    const bx = base + 190, bw = 170;
+    if (bx < W + 10 && bx + bw > -10) {
+      ctx.fillStyle = '#2f4a2c'; ctx.fillRect(bx - 10, top - 3, 12, 6); ctx.fillRect(bx + bw - 2, top - 3, 12, 6);
+      ctx.fillStyle = '#d6dde6'; ctx.fillRect(bx, top - 7, bw, 2);
+      ctx.fillStyle = '#9aa6b5'; ctx.fillRect(bx, top - 5, bw, 1);
+      ctx.fillStyle = '#c3ccd8'; ctx.fillRect(bx, top - 11, bw, 1);
+      for (let i = 0; i <= bw; i += 14) {
+        ctx.fillStyle = '#c3ccd8'; ctx.fillRect(bx + i, top - 11, 1, 4);
+        ctx.fillStyle = '#6b7686'; ctx.fillRect(bx + i, top - 4, 2, 9);
+        ctx.fillStyle = '#fde68a'; ctx.fillRect(bx + i, top - 12, 1, 1);
+        ctx.fillStyle = 'rgba(253,230,138,0.25)'; ctx.fillRect(bx + i, top + 6, 1, 8);
+      }
+    }
   }
+  // brilho da superfície
+  ctx.fillStyle = 'rgba(255,200,220,0.35)';
+  for (let i = 0; i < 18; i++) {
+    const x = Math.floor(((i * 41 + frame * 0.3) % (W + 20)) - 10);
+    ctx.fillRect(x, top + 4 + (i % 7) * 4, 5, 1);
+  }
+}
 
-  const stageCfg = STAGES[currentStage];
-  const isNight = stageCfg.theme === 'night';
-  const isSunset = stageCfg.theme === 'sunset';
+function drawBackground() {
+  const th = cfg.theme;
+  bandedSky(theme.sky);
+  if (th === 'night' || th === 'secret') { drawStars(); drawMoon(330, 34, th === 'secret' ? '#ffe4f1' : '#fef3c7'); }
+  if (th === 'day') { pxCircle(ctx, 330, 30, 13, '#ffe58a'); pxCircle(ctx, 330, 30, 10, '#fff6c4'); }
+  if (th === 'sunset') { pxCircle(ctx, 300, 140, 24, '#ffb36b'); pxCircle(ctx, 300, 140, 19, '#ffd88a'); }
+  if (theme.clouds) drawClouds(camX * 0.08 + frame * 0.04);
+  drawCity(-camX * 0.15, 158, th);
+  drawHills(camX * 0.25, 22, 6, 0.02, theme.hillFar, 1);
+  if (cfg.lake) drawLake(camX);
+  else { drawHills(camX * 0.45, 12, 5, 0.035, theme.hillNear, 3); drawBushes(camX * 0.7, theme.bush); }
+}
 
-  // Céu de acordo com a fase (1: Dia, 2: Entardecer, 3: Noite)
-  if (isNight) {
-    drawNightSkyAndMoon();
-  } else if (isSunset) {
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    skyGrad.addColorStop(0, '#312e81');
-    skyGrad.addColorStop(0.45, '#db2777');
-    skyGrad.addColorStop(0.85, '#fb923c');
-    skyGrad.addColorStop(1, '#fde047');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+function drawGround(cam) {
+  const x0 = Math.floor(cam);
+  ctx.fillStyle = theme.dirt; ctx.fillRect(x0, GY + 3, W + 1, H - GY);
+  ctx.fillStyle = theme.dirtD; ctx.fillRect(x0, GY + 3, W + 1, 1);
+  ctx.fillStyle = theme.grass; ctx.fillRect(x0, GY, W + 1, 3);
+  for (let x = Math.floor(x0 / 4) * 4; x < x0 + W + 4; x += 4) {
+    ctx.fillStyle = theme.grassL; ctx.fillRect(x, GY - 1, 1, 1); ctx.fillRect(x + 2, GY, 1, 1);
+  }
+  for (let x = Math.floor(x0 / 16) * 16; x < x0 + W + 16; x += 16) {
+    const h = Math.abs((x * 7919) % 97);
+    ctx.fillStyle = theme.dirtL; ctx.fillRect(x + (h % 12), GY + 8 + (h % 14), 2, 1);
+    ctx.fillStyle = theme.dirtD; ctx.fillRect(x + ((h * 3) % 14), GY + 18 + (h % 8), 1, 1);
+    ctx.fillStyle = theme.dirtL; ctx.fillRect(x + ((h * 5) % 15), GY + 26 - (h % 5), 1, 1);
+  }
+}
 
-    // Sol poente no horizonte
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
-    ctx.beginPath();
-    ctx.arc(760, 320, 48, 0, Math.PI * 2);
-    ctx.fill();
+function drawPlatform(p) {
+  const x = Math.round(p.x), y = Math.round(p.y);
+  const moving = p.mx || p.my;
+  if (moving) {
+    ctx.fillStyle = '#0055a4'; ctx.fillRect(x, y, p.w, 6);
+    ctx.fillStyle = '#f5b301'; ctx.fillRect(x, y, p.w, 2);
+    ctx.fillStyle = '#002a5c'; ctx.fillRect(x, y + 5, p.w, 1);
+    ctx.fillStyle = '#ffd84d'; for (let i = 3; i < p.w - 2; i += 8) ctx.fillRect(x + i, y + 3, 2, 1);
   } else {
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    skyGrad.addColorStop(0, '#38bdf8');
-    skyGrad.addColorStop(1, '#bae6fd');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#9a5a2c'; ctx.fillRect(x, y, p.w, 6);
+    ctx.fillStyle = '#d2955a'; ctx.fillRect(x, y, p.w, 1);
+    ctx.fillStyle = '#6b3a1a'; ctx.fillRect(x, y + 5, p.w, 1);
+    for (let i = 6; i < p.w; i += 7) ctx.fillRect(x + i, y + 1, 1, 4);
+    ctx.fillStyle = '#4a7c3a'; ctx.fillRect(x + 1, y - 1, 3, 1); ctx.fillRect(x + p.w - 5, y - 1, 3, 1);
   }
+}
 
-  // Nuvens (dia e entardecer)
-  if (!isNight) {
-    ctx.fillStyle = isSunset ? 'rgba(254, 215, 170, 0.65)' : 'rgba(255, 255, 255, 0.85)';
-    for (let i = 0; i < 6; i++) {
-      const cx = ((i * 260 - cameraX * 0.2) % (canvas.width + 200)) - 100;
-      const cy = 65 + (i % 3) * 35;
-      ctx.fillRect(cx, cy, 70, 20);
-      ctx.fillRect(cx + 15, cy - 12, 40, 14);
-    }
+function drawLantern(l) {
+  ctx.fillStyle = '#3f2a1d'; ctx.fillRect(l.x + 4, l.y - 6, 1, 6);
+  if (l.lit) {
+    const r = 20 + Math.sin(frame * 0.15 + l.x) * 2;
+    const g = ctx.createRadialGradient(l.x + 5, l.y + 8, 1, l.x + 5, l.y + 8, r);
+    g.addColorStop(0, 'rgba(255,240,170,0.55)'); g.addColorStop(1, 'rgba(255,150,60,0)');
+    ctx.fillStyle = g; ctx.fillRect(l.x + 5 - r, l.y + 8 - r, r * 2, r * 2);
+    if (frame % 14 === 0) particles.push({ x: l.x + 2 + Math.random() * 6, y: l.y + 6, vx: (Math.random() - 0.5) * 0.2, vy: -0.3, life: 30, max: 30, c: Math.random() > 0.5 ? '#fff1a8' : '#ffffff', s: 1, up: true });
   }
+  drawPixelMatrix(ctx, l.lit ? LANTERN_ON : LANTERN_OFF, l.x, l.y, false, l.golden ? GOLD_MAP : null);
+}
 
-  // Colinas distantes (SEM Castelo Japonês no meio do percurso!)
-  ctx.fillStyle = isNight ? '#1e293b' : isSunset ? '#7c2d12' : '#86efac';
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.quadraticCurveTo(260, 330, 560, GROUND_Y);
-  ctx.quadraticCurveTo(800, 310, 1020, GROUND_Y);
-  ctx.fill();
+function drawGoalPortal(x) {
+  const r = 30 + Math.sin(frame * 0.08) * 3;
+  const g = ctx.createRadialGradient(x, GY - 20, 2, x, GY - 20, r);
+  g.addColorStop(0, 'rgba(255,216,77,0.55)'); g.addColorStop(1, 'rgba(255,216,77,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - r, GY - 20 - r, r * 2, r * 2);
+  drawToriiBack(ctx, x, GY);
+  const next = stageId === 'S' ? '1-3' : stageId === 1 ? '1-2' : '1-3';
+  const label = `${t('stage_word')} ${next} >`;
+  const w = pixelTextWidth(label) + 6;
+  ctx.fillStyle = '#002a5c'; ctx.fillRect(x - w / 2, GY - 58, w, 11);
+  ctx.fillStyle = '#f5b301'; ctx.fillRect(x - w / 2, GY - 58, w, 1); ctx.fillRect(x - w / 2, GY - 48, w, 1);
+  drawPixelText(ctx, label, x - w / 2 + 3, GY - 55, '#ffd84d');
+}
 
-  ctx.fillStyle = isNight ? '#14532d' : isSunset ? '#166534' : '#4ade80';
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.quadraticCurveTo(180, 360, 420, GROUND_Y);
-  ctx.quadraticCurveTo(720, 340, 960, GROUND_Y);
-  ctx.fill();
-
-  // Laguinho do Parque Ikeda ao fundo na Fase 2
-  if (stageCfg.hasLake) {
-    drawParqueIkedaLake();
+function drawSecretTorii(s) {
+  const x = s.x, gy = s.y;
+  for (let i = 0; i < 3; i++) {
+    const a = frame * 0.05 + i * 2.1;
+    ctx.fillStyle = '#fff1a8';
+    ctx.fillRect(Math.round(x + Math.cos(a) * 14), Math.round(gy - 14 + Math.sin(a) * 10), 1, 1);
   }
+  ctx.fillStyle = '#f5b301'; ctx.fillRect(x - 9, gy - 24, 2, 24); ctx.fillRect(x + 7, gy - 24, 2, 24); ctx.fillRect(x - 10, gy - 19, 20, 1);
+  ctx.fillStyle = '#ffd84d'; ctx.fillRect(x - 12, gy - 26, 24, 2);
+  ctx.fillStyle = '#7a5800'; ctx.fillRect(x - 13, gy - 27, 26, 1);
+  drawPixelText(ctx, '?', x - 1, gy - 15, '#ffffff');
+}
 
+function drawSign() {
+  const x = 22;
+  ctx.fillStyle = '#6b3a1a'; ctx.fillRect(x + 4, GY - 20, 2, 20); ctx.fillRect(x + 40, GY - 20, 2, 20);
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(x, GY - 30, 46, 16);
+  ctx.fillStyle = '#9a5a2c'; ctx.fillRect(x, GY - 30, 46, 1); ctx.fillRect(x, GY - 15, 46, 1); ctx.fillRect(x, GY - 30, 1, 16); ctx.fillRect(x + 45, GY - 30, 1, 16);
+  const l1 = t('sign1'), l2 = t('sign2');
+  drawPixelText(ctx, l1, x + 23 - pixelTextWidth(l1) / 2, GY - 27, '#0055a4');
+  drawPixelText(ctx, l2, x + 23 - pixelTextWidth(l2) / 2, GY - 21, '#c81e1e');
+}
+
+function drawPlayer() {
+  if (player.inv > 0 && Math.floor(frame / 4) % 2 === 0) return;
+  const male = selectedCharacter === 'male';
+  let spr;
+  if (!player.onGround) spr = male ? SORA_JUMP : RIKU_JUMP;
+  else if (Math.abs(player.vx) > 0.3 && Math.floor(frame / 8) % 2 === 0) spr = male ? SORA_WALK : RIKU_WALK;
+  else spr = male ? SORA_IDLE : RIKU_IDLE;
+  drawPixelMatrix(ctx, spr, player.x - 2, player.y - 1, player.facing < 0);
+}
+
+function drawWorld() {
+  drawBackground();
+  const cam = Math.round(camX);
   ctx.save();
-  ctx.translate(-Math.floor(cameraX), 0);
+  ctx.translate(-cam, 0);
 
-  // Árvores de Cerejeira e Ipê
-  for (const t of trees) {
-    drawTree(ctx, t.x, GROUND_Y, t.type);
+  for (const tr of cfg.trees) if (tr.x > cam - 30 && tr.x < cam + W + 30) drawTree(ctx, tr.x, GY, tr.type);
+  for (const d of cfg.decor) if (d.t === 'toro') drawPixelMatrix(ctx, TORO, d.x, GY - 12, false, cfg.theme === 'night' ? null : TORO_OFF);
+  if (cfg.sign) drawSign();
+  for (const tx of cfg.toriis) drawToriiBack(ctx, tx, GY);
+
+  drawGround(cam);
+
+  if (cfg.castle) drawCastle(ctx, cfg.goalX - 50, GY, true, frame);
+  else drawGoalPortal(cfg.goalX);
+  if (cfg.secret && !secretFound) drawSecretTorii(cfg.secret);
+
+  for (const p of platforms) drawPlatform(p);
+  for (const l of lanterns) drawLantern(l);
+
+  for (const f of flowers) {
+    if (f.got) continue;
+    const bob = Math.round(Math.sin(frame * 0.1 + f.x) * 1.5);
+    drawPixelMatrix(ctx, FLOWER, f.x - 3, f.y - 3 + bob);
   }
 
-  // Placa de Boas-vindas a Assaí no início da Fase 1
-  if (currentStage === 1) {
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(42, GROUND_Y - 56, 8, 56);
-    ctx.fillRect(118, GROUND_Y - 56, 8, 56);
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(30, GROUND_Y - 78, 108, 34);
-    ctx.strokeStyle = '#78350f';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(30, GROUND_Y - 78, 108, 34);
-    ctx.fillStyle = '#1e293b';
-    ctx.font = '8px "Press Start 2P", monospace';
-    ctx.fillText('BEM-VINDO', 44, GROUND_Y - 62);
-    ctx.fillText('A ASSAÍ!', 50, GROUND_Y - 50);
+  const bugMap = cfg.theme === 'night' ? BUG_NIGHT : cfg.theme === 'sunset' ? BUG_SUNSET : null;
+  for (const e of enemies) {
+    if (e.dead) { if (e.squash > 0) drawPixelMatrix(ctx, BUG_SQUASH, e.x, e.y + 6, false, bugMap); continue; }
+    drawPixelMatrix(ctx, Math.floor(frame / 10) % 2 ? BUG_A : BUG_B, e.x, e.y, e.vx > 0, bugMap);
   }
 
-  // Toriis (parte de trás antes do jogador)
-  for (const tx of toriis) {
-    drawToriiBack(ctx, tx, GROUND_Y);
-  }
+  drawPlayer();
 
-  // Chão + grama
-  ctx.fillStyle = isNight ? '#15803d' : '#16a34a';
-  ctx.fillRect(0, GROUND_Y, worldWidth, 16);
-  ctx.fillStyle = isNight ? '#451a03' : '#92400e';
-  ctx.fillRect(0, GROUND_Y + 16, worldWidth, canvas.height - GROUND_Y - 16);
-  ctx.fillStyle = isNight ? '#291509' : '#78350f';
-  for (let gx = 0; gx < worldWidth; gx += 32) {
-    ctx.fillRect(gx, GROUND_Y + 24, 28, 14);
-    ctx.fillRect(gx + 16, GROUND_Y + 46, 28, 14);
-  }
+  for (const tx of cfg.toriis) drawToriiFront(ctx, tx, GY);
+  if (!cfg.castle) drawToriiFront(ctx, cfg.goalX, GY);
 
-  // Plataformas (com detalhe dourado nas plataformas móveis)
-  for (const p of platforms) {
-    const isMoving = Boolean(p.moveX || p.moveY);
-    ctx.fillStyle = isMoving ? '#9a3412' : isNight ? '#78350f' : '#b45309';
-    ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.w, p.h);
-    ctx.fillStyle = isMoving ? '#facc15' : isNight ? '#15803d' : '#16a34a';
-    ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.w, 6);
-    if (isMoving) {
-      ctx.fillStyle = '#fef08a';
-      ctx.fillRect(Math.floor(p.x) + 4, Math.floor(p.y) + 10, 6, 6);
-      ctx.fillRect(Math.floor(p.x + p.w) - 10, Math.floor(p.y) + 10, 6, 6);
-    }
-  }
-
-  // Lanternas Japonesas (acendem e brilham ao bater a cabeça!)
-  for (const l of lanterns) {
-    drawJapaneseLantern(ctx, l.x, l.y, l.w, l.h, l.lit, frameCount);
-  }
-
-  // Partículas de luz das lanternas
-  for (const lp of lightParticles) {
-    const alpha = Math.max(0, lp.life / lp.maxLife);
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = lp.color;
-    ctx.fillRect(Math.floor(lp.x), Math.floor(lp.y), lp.size, lp.size);
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    ctx.fillStyle = p.c;
+    ctx.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s);
   }
   ctx.globalAlpha = 1;
-
-  // Coletáveis (Flores de Sakura)
-  for (const c of collectibles) {
-    if (c.collected) continue;
-    const bob = Math.sin(frameCount * 0.1 + c.x) * 3;
-    ctx.fillStyle = '#f472b6';
-    ctx.fillRect(c.x - 8, c.y - 8 + bob, 16, 16);
-    ctx.fillStyle = '#fef08a';
-    ctx.fillRect(c.x - 3, c.y - 3 + bob, 6, 6);
+  for (const p of popups) {
+    ctx.globalAlpha = Math.min(1, p.life / 20);
+    drawPixelText(ctx, p.text, p.x - pixelTextWidth(p.text) / 2, p.y, p.color, '#000');
   }
-
-  // Inimigos
-  for (const e of enemies) {
-    if (!e.alive) continue;
-    const mat = Math.floor(frameCount / 12) % 2 === 0 ? ENEMY_1 : ENEMY_2;
-    drawPixelMatrix(ctx, mat, e.x, e.y, 3, e.vx > 0);
-  }
-
-  // Objetivo da Fase:
-  // Fases 1 e 2 -> Portal Torii para a próxima fase
-  // Fase 3 -> Castelo Japonês de Assaí iluminado!
-  if (stageCfg.hasCastle) {
-    drawJapaneseCastle(ctx, goalX + 20, GROUND_Y - 134, 1.05, true);
-  } else {
-    drawStageGoalPortal(ctx, goalX + 40, GROUND_Y, currentStage);
-  }
-
-  // Jogador (Sora ou Riku)
-  if (player.invincibleTimer === 0 || Math.floor(frameCount / 4) % 2 === 0) {
-    let sprite;
-    if (!player.onGround) {
-      sprite = selectedCharacter === 'male' ? SORA_JUMP : RIKU_JUMP;
-    } else if (Math.abs(player.vx) > 0.5 && Math.floor(frameCount / 8) % 2 === 0) {
-      sprite = selectedCharacter === 'male' ? SORA_WALK : RIKU_WALK;
-    } else {
-      sprite = selectedCharacter === 'male' ? SORA_IDLE : RIKU_IDLE;
-    }
-    drawPixelMatrix(ctx, sprite, player.x - 2, player.y - 2, 3, !player.facingRight);
-  }
-
-  // Toriis (parte da frente por cima do jogador!)
-  for (const tx of toriis) {
-    drawToriiFront(ctx, tx, GROUND_Y);
-  }
-
+  ctx.globalAlpha = 1;
   ctx.restore();
+  drawPetals();
+}
 
-  // Pétalas de cerejeira e ipê na tela
-  for (const pt of petals) {
-    ctx.fillStyle = pt.color;
-    ctx.fillRect(Math.floor(pt.x), Math.floor(pt.y), pt.size, pt.size);
+function drawPetals() {
+  for (const p of petals) { ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s); }
+}
+
+// ================= Tela inicial =================
+function drawMenu() {
+  theme = THEMES.night;
+  bandedSky(THEMES.night.sky);
+  drawStars();
+  drawMoon(318, 30);
+  // cidade de Assaí ao fundo
+  drawCity(-frame * 0.06, 166, 'night');
+  drawCity(-frame * 0.03 + 190, 160, 'night');
+  // colinas
+  ctx.fillStyle = '#16233f';
+  for (let x = 0; x < W; x += 2) { const h = Math.floor(12 + Math.sin((x + frame * 0.05) * 0.03) * 4); ctx.fillRect(x, GY - h, 2, h); }
+  // morro do castelo com chão
+  const cx = 192;
+  for (let x = 0; x < W; x++) {
+    const d = Math.abs(x - cx);
+    let top;
+    if (d < 64) top = 156;
+    else if (d < 124) top = 156 + Math.floor(((d - 64) / 60) * (GY - 156));
+    else continue;
+    ctx.fillStyle = '#2a6b3c'; ctx.fillRect(x, top, 1, 2);
+    ctx.fillStyle = '#4a3322'; ctx.fillRect(x, top + 2, 1, GY - top);
+    if (x % 5 === 0) { ctx.fillStyle = '#5c4430'; ctx.fillRect(x, top + 6 + (x % 9), 1, 1); }
   }
+  // escadaria de pedra subindo até o castelo
+  for (let i = 0; i < 14; i++) {
+    const sx = 250 + i * 4, sy = 156 + i * 2;
+    ctx.fillStyle = '#9ca3af'; ctx.fillRect(sx, sy, 6, 2);
+    ctx.fillStyle = '#6b7280'; ctx.fillRect(sx, sy + 2, 6, 1);
+  }
+  // castelo no topo
+  drawCastle(ctx, cx - 50, 156, true, frame);
+  // chão
+  ctx.fillStyle = '#1f5a36'; ctx.fillRect(0, GY, W, 3);
+  ctx.fillStyle = '#3b210f'; ctx.fillRect(0, GY + 3, W, H - GY);
+  ctx.fillStyle = '#2f7a48'; for (let x = 0; x < W; x += 4) ctx.fillRect(x, GY - 1, 1, 1);
+  // torii vermelho no pé da escadaria, tōrōs e árvores
+  drawToriiBack(ctx, 318, GY); drawToriiFront(ctx, 318, GY);
+  drawPixelMatrix(ctx, TORO, 116, GY - 12);
+  drawPixelMatrix(ctx, TORO, 262, GY - 12);
+  drawTree(ctx, 34, GY, 'sakura');
+  drawTree(ctx, 80, GY, 'ipe-branco');
+  drawTree(ctx, 362, GY, 'ipe-amarelo');
+  // galhos de cerejeira nos cantos (desenhados por cima de tudo)
+  drawSakuraBranch(ctx, W, false);
+  drawSakuraBranch(ctx, W, true);
+  drawPetals();
 }
 
-function gameLoop() {
-  update();
+// ================= Loop =================
+function draw() {
+  if (state === 'menu') drawMenu();
+  else drawWorld();
+}
+
+let last = performance.now(), acc = 0;
+const STEP = 1000 / 60;
+function loop(now) {
+  acc += Math.min(100, now - last);
+  last = now;
+  while (acc >= STEP) { update(); acc -= STEP; }
   draw();
-  animFrameId = requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 
-// Inicialização
-loadStage(1, true);
-gameLoop();
+applySettings();
+theme = THEMES.night;
+initPetals();
+requestAnimationFrame(loop);
