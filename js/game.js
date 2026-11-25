@@ -448,7 +448,7 @@ function startGame(withIntro = true) {
 function showIntro() {
   const isSora = selectedCharacter === 'male';
   $('dialogue-speaker').textContent = isSora ? 'SORA' : 'RIKU';
-  $('dialogue-avatar-img').src = isSora ? 'assets/portrait-sora.png' : 'assets/portrait-riku.png';
+  $('dialogue-avatar-img').src = isSora ? 'assets/portrait-sora.png?v=9' : 'assets/portrait-riku.png?v=9';
   const full = t('dialogue_' + selectedCharacter);
   $('dialogue-text').textContent = '';
   $('dialogue-box').classList.remove('hidden');
