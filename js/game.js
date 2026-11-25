@@ -148,7 +148,14 @@ function applySettings() {
   applyI18n();
   Audio8.setVolumes(settings.music / 100, settings.sfx / 100);
   wrapper.dataset.hud = settings.hud;
-  document.documentElement.style.setProperty('--ctrl-size', { normal: '76px', large: '96px', huge: '118px' }[settings.ctrlSize] || '96px');
+  wrapper.style.setProperty(
+    '--ctrl-size',
+    {
+      normal: 'clamp(64px, 11cqw, 108px)',
+      large: 'clamp(82px, 14cqw, 136px)',
+      huge: 'clamp(98px, 17cqw, 164px)',
+    }[settings.ctrlSize] || 'clamp(82px, 14cqw, 136px)'
+  );
   $('mobile-controls').style.opacity = settings.ctrlOpacity / 100;
   $('mobile-controls').classList.toggle('left-handed', !!settings.leftHanded);
   $('set-lang').value = settings.lang;
