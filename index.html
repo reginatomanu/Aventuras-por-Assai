@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
   <div id="game-wrapper" data-hud="normal">
@@ -26,18 +26,26 @@
       <div class="hud-group">
         <div class="hud-item"><span class="hud-label" data-i18n="hud_time"></span><span id="hud-time">00:00</span></div>
         <div class="hud-item"><span class="hud-label" data-i18n="hud_stage"></span><span id="hud-world">1-1</span></div>
-        <button id="btn-pause" class="hud-btn" aria-label="Pausa">II</button>
+        <button id="btn-pause" class="hud-btn" aria-label="Pausa">
+          <svg class="lucide lucide-pause" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
+        </button>
       </div>
     </div>
 
     <!-- Controles touch -->
     <div id="mobile-controls" class="mobile-controls hidden">
       <div class="mobile-dpad">
-        <button id="btn-left" class="touch-btn" aria-label="Esquerda">◀</button>
-        <button id="btn-right" class="touch-btn" aria-label="Direita">▶</button>
+        <button id="btn-left" class="touch-btn" aria-label="Esquerda">
+          <svg class="lucide lucide-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button id="btn-right" class="touch-btn" aria-label="Direita">
+          <svg class="lucide lucide-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
       </div>
       <div class="mobile-actions">
-        <button id="btn-jump" class="touch-btn jump-btn" aria-label="Pular">▲</button>
+        <button id="btn-jump" class="touch-btn jump-btn" aria-label="Pular">
+          <svg class="lucide lucide-arrow-big-up" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18v-6H5l7-7 7 7h-4v6H9z"/></svg>
+        </button>
       </div>
     </div>
 
@@ -69,11 +77,23 @@
       </div>
 
       <div class="title-footer">
-        <button id="btn-start" class="rpg-start-btn"><span>🏮</span><span data-i18n="start"></span></button>
+        <button id="btn-start" class="rpg-start-btn">
+          <svg class="lucide lucide-flame" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          <span data-i18n="start"></span>
+        </button>
         <div class="title-menu-row">
-          <button id="btn-open-ranking" class="chip-btn">🏆 <span data-i18n="ranking"></span></button>
-          <button id="btn-open-achievements" class="chip-btn">🎖️ <span data-i18n="achievements"></span></button>
-          <button id="btn-open-settings" class="chip-btn">⚙️ <span data-i18n="settings"></span></button>
+          <button id="btn-open-ranking" class="chip-btn">
+            <svg class="lucide lucide-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            <span data-i18n="ranking"></span>
+          </button>
+          <button id="btn-open-achievements" class="chip-btn">
+            <svg class="lucide lucide-medal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 18v-2h-.5"/></svg>
+            <span data-i18n="achievements"></span>
+          </button>
+          <button id="btn-open-settings" class="chip-btn">
+            <svg class="lucide lucide-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span data-i18n="settings"></span>
+          </button>
         </div>
         <div class="controls-hint desktop-only" data-i18n="controls_hint"></div>
       </div>
@@ -86,7 +106,12 @@
         <div class="dialogue-content">
           <div id="dialogue-speaker" class="dialogue-speaker">SORA</div>
           <p id="dialogue-text" class="dialogue-text"></p>
-          <div class="dialogue-actions"><button id="btn-dialogue-ok" class="rpg-start-btn small" data-i18n="dialogue_ok"></button></div>
+          <div class="dialogue-actions">
+            <button id="btn-dialogue-ok" class="rpg-start-btn small">
+              <span data-i18n="dialogue_ok"></span>
+              <svg class="lucide lucide-play" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -96,10 +121,17 @@
       <div class="panel">
         <h2 id="result-title" class="panel-title"></h2>
         <div id="result-stage" class="panel-sub"></div>
-        <div id="result-stars" class="stars"><span>★</span><span>★</span><span>★</span></div>
+        <div id="result-stars" class="stars">
+          <span><svg class="lucide lucide-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+          <span><svg class="lucide lucide-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+          <span><svg class="lucide lucide-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        </div>
         <div class="star-hint" data-i18n="star_hint"></div>
         <div id="result-stats" class="stats"></div>
-        <button id="btn-result-continue" class="rpg-start-btn small" data-i18n="continue"></button>
+        <button id="btn-result-continue" class="rpg-start-btn small">
+          <span data-i18n="continue"></span>
+          <svg class="lucide lucide-play" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        </button>
       </div>
     </div>
 
@@ -110,7 +142,7 @@
         <p id="end-message" class="panel-text"></p>
         <div class="end-stats">
           <div><span data-i18n="final_score"></span><b id="final-score-val">0</b></div>
-          <div><span data-i18n="total_stars"></span><b id="final-stars-val">0 ★</b></div>
+          <div><span data-i18n="total_stars"></span><b id="final-stars-val">0</b></div>
         </div>
         <div id="name-row" class="name-row">
           <input id="player-name" maxlength="14" data-i18n-ph="your_name" />
@@ -186,18 +218,27 @@
         <h2 class="panel-title" data-i18n="paused"></h2>
         <div class="panel-buttons vertical">
           <button id="btn-resume" class="rpg-start-btn small" data-i18n="resume"></button>
-          <button id="btn-pause-settings" class="chip-btn">⚙️ <span data-i18n="settings"></span></button>
+          <button id="btn-pause-settings" class="chip-btn">
+            <svg class="lucide lucide-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span data-i18n="settings"></span>
+          </button>
           <button id="btn-quit" class="chip-btn" data-i18n="quit"></button>
         </div>
       </div>
     </div>
 
-    <div id="rotate-hint" class="rotate-hint"><div>📱↻</div><p data-i18n="rotate"></p></div>
+    <div id="rotate-hint" class="rotate-hint">
+      <div class="rotate-icons">
+        <svg class="lucide lucide-smartphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+        <svg class="lucide lucide-rotate-cw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+      </div>
+      <p data-i18n="rotate"></p>
+    </div>
   </div>
 
-  <script src="js/i18n.js?v=4"></script>
-  <script src="js/audio.js?v=4"></script>
-  <script src="js/sprites.js?v=4"></script>
-  <script src="js/game.js?v=4"></script>
+  <script src="js/i18n.js?v=5"></script>
+  <script src="js/audio.js?v=5"></script>
+  <script src="js/sprites.js?v=5"></script>
+  <script src="js/game.js?v=5"></script>
 </body>
 </html>

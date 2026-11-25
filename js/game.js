@@ -304,9 +304,20 @@ function toast(html) {
   setTimeout(() => el.remove(), 3100);
 }
 
+const LUCIDE_SVGS = {
+  flame: '<svg class="lucide lucide-flame" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+  bug: '<svg class="lucide lucide-bug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>',
+  landmark: '<svg class="lucide lucide-landmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>',
+  star: '<svg class="lucide lucide-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  heart: '<svg class="lucide lucide-heart" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>',
+  lock: '<svg class="lucide lucide-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  medal: '<svg class="lucide lucide-medal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 18v-2h-.5"/></svg>',
+};
+const lucideSvg = (name) => LUCIDE_SVGS[name] || LUCIDE_SVGS.medal;
+
 const ACH_LIST = [
-  { id: 'lanterns', icon: '🏮' }, { id: 'enemies', icon: '🐞' }, { id: 'secret', icon: '⛩️' },
-  { id: 'stars', icon: '⭐' }, { id: 'nohit', icon: '💖' },
+  { id: 'lanterns', icon: 'flame' }, { id: 'enemies', icon: 'bug' }, { id: 'secret', icon: 'landmark' },
+  { id: 'stars', icon: 'star' }, { id: 'nohit', icon: 'heart' },
 ];
 function unlock(id) {
   if (achievements[id]) return;
@@ -314,7 +325,7 @@ function unlock(id) {
   saveJSON('assai_ach', achievements);
   const a = ACH_LIST.find((x) => x.id === id);
   setTimeout(() => {
-    toast(`${a ? a.icon : '🎖️'} <b>${t('ach_unlocked')}</b> ${t('ach_' + id)}`);
+    toast(`${lucideSvg(a ? a.icon : 'medal')} <b>${t('ach_unlocked')}</b> ${t('ach_' + id)}`);
     Audio8.sfx.achievement();
   }, 350);
   if (typeof window.AventurasAssai.onAchievement === 'function') window.AventurasAssai.onAchievement(id);
@@ -323,7 +334,7 @@ function unlock(id) {
 function renderAchievements() {
   $('achievements-list').innerHTML = ACH_LIST.map((a) => `
     <li class="${achievements[a.id] ? 'on' : ''}">
-      <span class="ach-icon">${achievements[a.id] ? a.icon : '🔒'}</span>
+      <span class="ach-icon">${lucideSvg(achievements[a.id] ? a.icon : 'lock')}</span>
       <div><div class="ach-name">${t('ach_' + a.id)}</div><div class="ach-desc">${t('ach_' + a.id + '_d')}</div></div>
     </li>`).join('');
 }
@@ -336,7 +347,7 @@ async function renderRanking(el, n, highlight) {
   if (!list || !list.length) { el.innerHTML = `<li class="empty">${t('ranking_empty')}</li>`; return; }
   el.innerHTML = list.map((r) => `
     <li class="${highlight && r.date === highlight ? 'me' : ''}">
-      <span>${esc(r.name)}</span><span>${String(r.score).padStart(6, '0')}</span><span class="rk-stars">${r.stars || 0}★</span>
+      <span>${esc(r.name)}</span><span>${String(r.score).padStart(6, '0')}</span><span class="rk-stars">${r.stars || 0} ${lucideSvg('star')}</span>
     </li>`).join('');
 }
 
@@ -541,7 +552,7 @@ function endGame(won) {
   $('end-title').textContent = won ? t('victory') : t('gameover');
   $('end-message').textContent = t(won ? 'end_win' : 'end_lose', { name });
   $('final-score-val').textContent = score;
-  $('final-stars-val').textContent = totalStars + ' ★';
+  $('final-stars-val').innerHTML = `${totalStars} ${lucideSvg('star')}`;
   $('save-msg').classList.add('hidden');
   refreshNameRow();
   renderRanking($('end-ranking'), 5);
@@ -582,10 +593,10 @@ function hitLantern(l) {
   burst(l.x + 5, l.y + 8, 22, ['#ffffff', '#fff1a8', '#ffd84d', '#fb923c', '#fda4af'], 2.2);
   if (lanterns.every((x) => x.lit)) {
     score += 500; st.score += 500;
-    toast('🏮 ' + t('toast_lanterns'));
+    toast(`${lucideSvg('flame')} ${t('toast_lanterns')}`);
     unlock('lanterns');
     if (cfg.secret && !secretFound) {
-      toast('⛩️ ' + t('toast_secret_unlocked'));
+      toast(`${lucideSvg('landmark')} ${t('toast_secret_unlocked')}`);
       Audio8.sfx.secret();
       burst(cfg.secret.x, cfg.secret.y - 14, 24, ['#ffd84d', '#ffffff', '#f472b6'], 2.2);
     }
@@ -714,7 +725,7 @@ function update() {
       burst(e.x + 7, e.y + 4, 10, ['#ffffff', '#f5b301', '#dc2626']);
       if (enemies.every((x) => x.dead)) {
         score += 500; st.score += 500;
-        toast('🐞 ' + t('toast_enemies'));
+        toast(`${lucideSvg('bug')} ${t('toast_enemies')}`);
         unlock('enemies');
       }
     } else if (player.inv === 0) {
