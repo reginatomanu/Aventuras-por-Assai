@@ -2,54 +2,198 @@
 // O canvas tem resolução nativa de 384x216 e é ampliado sem suavização.
 
 const PALETTE = {
-  K: '#111827', S: '#fccba6', s: '#e29e73', C: '#f87171', R: '#dc2626', r: '#991b1b',
-  B: '#1f6fd6', b: '#0055a4', L: '#6ea8f0', Y: '#f5b301', y: '#b98200', W: '#ffffff',
-  D: '#78350f', d: '#451a03', M: '#94a3b8', O: '#fb923c', q: '#4a0d0d', P: '#f472b6',
-  p: '#be185d', w: '#fbcfe8', G: '#22c55e', N: '#475569',
+  K: '#181824', // contorno escuro suave
+  H: '#1f2438', // brilho do cabelo preto
+  S: '#ffd5b8', // pele clara
+  s: '#ebad88', // sombra da pele
+  C: '#ff8fa3', // bochecha rosada
+  R: '#dc2626', r: '#991b1b',
+  B: '#2563eb', b: '#1d4ed8', L: '#60a5fa',
+  Y: '#facc15', y: '#ca8a04',
+  W: '#ffffff',
+  D: '#78350f', d: '#451a03',
+  M: '#94a3b8', O: '#fb923c', q: '#4a0d0d',
+  P: '#f472b6', p: '#be185d', w: '#fbcfe8',
+  G: '#22c55e', N: '#475569',
 };
 
-// ---------- Personagens (16x20) ----------
+// ---------- Personagens (16x20 — estilo chibi 16-bit fofo e expressivo) ----------
 const SORA_IDLE = [
-  '....K.KKKK.K....', '...KKKKKKKKKK...', '..KKKKKKKKKKKK..', '..KKKSSSSSSKKK..',
-  '..KKSSKSSKSSKK..', '..KKSSKSSKSSKK..', '...KSSSSSSSSK...', '....KSSssSSK....',
-  '....KKKKKKKK....', '..KKYKBYYBKYKK..', '.KYYYKBBBBKYYYK.', '.KSYKBBLBBBKYSK.',
-  '.KSSKBBBBBBKSSK.', '..KKKBBBBBBKKK..', '....KBBKKBBK....', '....KBBKKBBK....',
-  '....KLLKKLLK....', '...KDDDKKDDDK...', '...KKKKKKKKKK...', '................',
+  '....KKKKKKKK....',
+  '..KKHHHHHHHHKK..',
+  '.KHHKKKKKKKKHHK.',
+  '.KKKKKKKKKKKKKK.',
+  '.KKKSSKSSKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '..KKSSSSSSSSKK..',
+  '...KKYYBBYYKK...',
+  '..KYYBYBBYBYYK..',
+  '.KSYYBBBBBBYYSK.',
+  '.KSSKBBLLBBKSSK.',
+  '..KKKBBBBBBKKK..',
+  '...KBBBBBBBBK...',
+  '...KBBBKKBBBK...',
+  '...KbbK..KbbK...',
+  '...KDDK..KDDK...',
+  '..KddDK..KDddK..',
+  '..KKKK....KKKK..',
 ];
-const SORA_WALK = [
-  '....K.KKKK.K....', '...KKKKKKKKKK...', '..KKKKKKKKKKKK..', '..KKKSSSSSSKKK..',
-  '..KKSSKSSKSSKK..', '..KKSSKSSKSSKK..', '...KSSSSSSSSK...', '....KSSssSSK....',
-  '....KKKKKKKK....', '..KKYKBYYBKYKK..', '.KYYYKBBBBKYYYK.', '.KSSKBBLBBBKSSK.',
-  '..KKKBBBBBBKKK..', '....KBBBBBBK....', '...KBBK..KBBK...', '..KLLK....KLLK..',
-  '..KDDK....KDDK..', '..KKKK....KKKK..', '................', '................',
+const SORA_WALK1 = [
+  '....KKKKKKKK....',
+  '..KKHHHHHHHHKK..',
+  '.KHHKKKKKKKKHHK.',
+  '.KKKKKKKKKKKKKK.',
+  '.KKKSSKSSKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '..KKSSSSSSSSKK..',
+  '...KKYYBBYYKK...',
+  '..KYYBYBBYBYYK..',
+  '.KSSYBBBBBBYSSK.',
+  '..KKKBBLLBBKKK..',
+  '...KBBBBBBBBK...',
+  '..KBBBBKKBBBBK..',
+  '..KbbK....KbbK..',
+  '.KDDK......KDDK.',
+  '.KKKK......KKKK.',
+  '................',
+  '................',
+];
+const SORA_WALK2 = [
+  '....KKKKKKKK....',
+  '..KKHHHHHHHHKK..',
+  '.KHHKKKKKKKKHHK.',
+  '.KKKKKKKKKKKKKK.',
+  '.KKKSSKSSKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '..KKSSSSSSSSKK..',
+  '...KKYYBBYYKK...',
+  '..KYYBYBBYBYYK..',
+  '.KSYYBBBBBBYYSK.',
+  '..KKKBBLLBBKKK..',
+  '...KBBBBBBBBK...',
+  '....KBBBBBBK....',
+  '....KbbKKbbK....',
+  '...KDDK..KDDK...',
+  '...KKKK..KKKK...',
+  '................',
+  '................',
 ];
 const SORA_JUMP = [
-  '....K.KKKK.K....', '...KKKKKKKKKK...', '..KKKKKKKKKKKK..', '..KKKSSSSSSKKK..',
-  '..KKSSKSSKSSKK..', '..KKSSKSSKSSKK..', '...KSSSSSSSSK...', '....KSSssSSK..K.',
-  '...KKKKKKKKKKSK.', '.KKYYKBYYBKYYK..', 'KSSYYKBBBBKKK...', '.KKKKBBLBBBK....',
-  '....KBBBBBBK....', '...KBBK..KBBK...', '..KLLK....KLLK..', '..KDDK....KDDK..',
-  '..KKKK....KKKK..', '................', '................', '................',
+  '....KKKKKKKK....',
+  '..KKHHHHHHHHKK..',
+  '.KHHKKKKKKKKHHK.',
+  '.KKKKKKKKKKKKKK.',
+  '.KKKSSKSSKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '..KKSSSSSSSSKKS.',
+  '..KYYYYBBYYYYKS.',
+  '.KSYYBYBBYBYYK..',
+  '.KKKKBBBBBBKK...',
+  '...KBBLLBBBBK...',
+  '..KBBBBKKBBBBK..',
+  '..KbbK....KbbK..',
+  '.KDDK......KDDK.',
+  '.KKKK......KKKK.',
+  '................',
+  '................',
+  '................',
 ];
+
 const RIKU_IDLE = [
-  '....KKKKKKKK....', '...KKKKKKKYYK...', '..KKKKKKKKYyYK..', '..KKKKSSSSKKYK..',
-  '..KKKSKSSKSKKK..', '..KKKSKSSKSKKK..', '..KKKCSSSSCKKK..', '..KKKKSssSKKKK..',
-  '...KKKKKKKKKK...', '..KKBBBBBBBBKK..', '.KBBKBBBBBBKBBK.', '.KSSKYYyKYYKSSK.',
-  '.KSSKBBBBBBKSSK.', '..KKBBBBBBBBKK..', '...KBBBBBBBBK...', '....KSSKKSSK....',
-  '....KWWKKWWK....', '...KKKKKKWKKK...', '...KKKKKKKKKK...', '................',
+  '....KKKKKKKK....',
+  '..KKHHHHHHYYKK..',
+  '.KHHKKKKKKYOYYK.',
+  '.KKKKKKKKKKYYKK.',
+  '.KKKSSKKKKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '.KKKSSSSSSSSKKK.',
+  '..KKKBBWWBBKKK..',
+  '..KBBBBBBBBBBK..',
+  '.KSBBBBBBBBBBSK.',
+  '.KSSKYYyKYYKSSK.',
+  '..KKBBBBBBBBKK..',
+  '..KBBBBbbBBBBK..',
+  '.KBBBBbbbbBBBBK.',
+  '...KSSK..KSSK...',
+  '...KWWK..KWWK...',
+  '..KKKKK..KKKKK..',
+  '................',
 ];
-const RIKU_WALK = [
-  '....KKKKKKKK....', '...KKKKKKKYYK...', '..KKKKKKKKYyYK..', '..KKKKSSSSKKYK..',
-  '..KKKSKSSKSKKK..', '..KKKSKSSKSKKK..', '..KKKCSSSSCKKK..', '..KKKKSssSKKKK..',
-  '...KKKKKKKKKK...', '..KKBBBBBBBBKK..', '.KBBKBBBBBBKBBK.', '.KSSKYYyKYYKSSK.',
-  '..KKKBBBBBBKKK..', '...KBBBBBBBBK...', '..KBBBBBBBBBBK..', '...KSSK..KSSK...',
-  '..KWWK....KWWK..', '..KKKK....KKKK..', '................', '................',
+const RIKU_WALK1 = [
+  '....KKKKKKKK....',
+  '..KKHHHHHHYYKK..',
+  '.KHHKKKKKKYOYYK.',
+  '.KKKKKKKKKKYYKK.',
+  '.KKKSSKKKKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '.KKKSSSSSSSSKKK.',
+  '..KKKBBWWBBKKK..',
+  '..KBBBBBBBBBBK..',
+  '.KSSBBBBBBBBSSK.',
+  '..KKKYYyKYYKKK..',
+  '..KBBBBBBBBBBK..',
+  '.KBBBBbbbbBBBBK.',
+  '..KSSK....KSSK..',
+  '.KWWK......KWWK.',
+  '.KKKK......KKKK.',
+  '................',
+  '................',
+];
+const RIKU_WALK2 = [
+  '....KKKKKKKK....',
+  '..KKHHHHHHYYKK..',
+  '.KHHKKKKKKYOYYK.',
+  '.KKKKKKKKKKYYKK.',
+  '.KKKSSKKKKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '.KKKSSSSSSSSKKK.',
+  '..KKKBBWWBBKKK..',
+  '..KBBBBBBBBBBK..',
+  '.KSBBBBBBBBBBSK.',
+  '..KKKYYyKYYKKK..',
+  '..KBBBBBBBBBBK..',
+  '..KBBBbbbbBBBK..',
+  '...KSSK..KSSK...',
+  '...KWWK..KWWK...',
+  '...KKKK..KKKK...',
+  '................',
+  '................',
 ];
 const RIKU_JUMP = [
-  '....KKKKKKKK....', '...KKKKKKKYYK...', '..KKKKKKKKYyYK..', '..KKKKSSSSKKYK..',
-  '..KKKSKSSKSKKK..', '..KKKSKSSKSKKK..', '..KKKCSSSSCKKK..', '..KKKKSssSKKKK..',
-  '...KKKKKKKKKK.K.', '.KKBBBBBBBBBBKSK', 'KSSKBBBBBBBBKKK.', '.KKKYYyKYYK.....',
-  '...KBBBBBBBBK...', '..KBBBBBBBBBBK..', '...KSSK..KSSK...', '..KWWK....KWWK..',
-  '..KKKK....KKKK..', '................', '................', '................',
+  '....KKKKKKKK....',
+  '..KKHHHHHHYYKK..',
+  '.KHHKKKKKKYOYYK.',
+  '.KKKKKKKKKKYYKK.',
+  '.KKKSSKKKKSSKKK.',
+  '.KKSSSSSSSSSSKK.',
+  '.KKSWKSssSKWSKK.',
+  '.KKSCSSSSSSCSKK.',
+  '.KKKSSSSSSSSKKS.',
+  '..KBBBBWWBBBBKS.',
+  '.KSBBBBBBBBBBK..',
+  '.KKKKYYyKYYKK...',
+  '..KBBBBBBBBBBK..',
+  '.KBBBBbbbbBBBBK.',
+  '..KSSK....KSSK..',
+  '.KWWK......KWWK.',
+  '.KKKK......KKKK.',
+  '................',
+  '................',
+  '................',
 ];
 
 // ---------- Bichinho (joaninha/besouro fofo 14x10) ----------
@@ -279,51 +423,134 @@ function drawToriiFront(ctx, x, gy, col = '#e02424', dark = '#1f2937') {
   ctx.fillStyle = '#f5b301'; ctx.fillRect(x - 1, gy - 37, 2, 4);
 }
 
-// ---------- Castelo Japonês de Assaí (baseado nas fotos reais) ----------
+// ---------- Castelo Japonês de Assaí (fiel à fachada real da foto) ----------
 function drawCastle(ctx, x, gy, night, frame) {
-  const wall = night ? '#c7d2e0' : '#f8fafc', wallS = night ? '#94a3b8' : '#dbe3ec';
-  const roof = night ? '#3b4a63' : '#6b7a8f', roofD = night ? '#1e293b' : '#475569', roofL = night ? '#56657d' : '#94a3b8';
-  const stone = night ? '#2e2a27' : '#5f5751', stoneD = night ? '#1c1917' : '#433d38', stoneL = night ? '#3f3a36' : '#7a716a';
+  const wall = night ? '#d5deeb' : '#f8fafc', wallS = night ? '#94a3b8' : '#dbe3ec';
+  const roof = night ? '#46566e' : '#738296', roofD = night ? '#1e293b' : '#475569', roofL = night ? '#64748b' : '#94a3b8';
+  const gableFill = night ? '#64748b' : '#94a3b8';
+  const stone = night ? '#3a342f' : '#635951', stoneD = night ? '#231f1c' : '#433c36', stoneL = night ? '#524942' : '#7d7268';
   const win = night ? '#fde047' : '#1e293b';
+  const slit = night ? '#cbd5e1' : '#334155';
 
-  // torre de antena (presente em todas as fotos do castelo)
+  // Torre de antena metálica à direita (como na foto real) e menor atrás à esquerda
   ctx.fillStyle = night ? '#475569' : '#7b8794';
-  ctx.fillRect(x - 18, gy - 100, 1, 100); ctx.fillRect(x - 11, gy - 100, 1, 100);
-  for (let k = 0; k < 100; k += 7) { ctx.fillRect(x - 18, gy - 100 + k, 8, 1); for (let d = 0; d < 7; d++) ctx.fillRect(x - 18 + d, gy - 100 + k + d, 1, 1); }
-  ctx.fillStyle = Math.floor(frame / 30) % 2 ? '#ef4444' : '#7f1d1d'; ctx.fillRect(x - 15, gy - 103, 2, 2);
+  ctx.fillRect(x + 106, gy - 98, 1, 98); ctx.fillRect(x + 112, gy - 98, 1, 98);
+  for (let k = 0; k < 98; k += 7) {
+    ctx.fillRect(x + 106, gy - 98 + k, 7, 1);
+    for (let d = 0; d < 6; d++) ctx.fillRect(x + 106 + d, gy - 98 + k + d, 1, 1);
+  }
+  ctx.fillStyle = Math.floor(frame / 30) % 2 ? '#ef4444' : '#7f1d1d';
+  ctx.fillRect(x + 108, gy - 100, 2, 2);
 
-  // base de pedra
-  ctx.fillStyle = stone; ctx.fillRect(x, gy - 16, 100, 16);
+  // Base de pedra escura
+  ctx.fillStyle = stone; ctx.fillRect(x, gy - 14, 100, 14);
   for (let r = 0; r < 4; r++) {
-    ctx.fillStyle = stoneD; ctx.fillRect(x, gy - 16 + r * 4, 100, 1);
-    for (let c = (r % 2) * 4; c < 100; c += 8) { ctx.fillRect(x + c, gy - 15 + r * 4, 1, 3); ctx.fillStyle = stoneL; ctx.fillRect(x + c + 2, gy - 14 + r * 4, 2, 1); ctx.fillStyle = stoneD; }
+    ctx.fillStyle = stoneD; ctx.fillRect(x, gy - 14 + r * 3, 100, 1);
+    for (let c = (r % 2) * 4; c < 100; c += 8) {
+      ctx.fillRect(x + c, gy - 13 + r * 3, 1, 2);
+      ctx.fillStyle = stoneL; ctx.fillRect(x + c + 2, gy - 12 + r * 3, 2, 1);
+      ctx.fillStyle = stoneD;
+    }
   }
-  // 1º andar
-  ctx.fillStyle = wall; ctx.fillRect(x + 3, gy - 34, 94, 18);
-  ctx.fillStyle = wallS; ctx.fillRect(x + 3, gy - 34, 94, 2); ctx.fillRect(x + 90, gy - 34, 7, 18);
-  ctx.fillStyle = win; for (let wx = x + 8; wx < x + 92; wx += 7) { if (Math.abs(wx - (x + 50)) < 7) continue; ctx.fillRect(wx, gy - 29, 1, 4); }
-  ctx.fillStyle = '#4a2511'; ctx.fillRect(x + 45, gy - 26, 10, 10);
-  ctx.fillStyle = night ? '#a16207' : '#7c3f1d'; ctx.fillRect(x + 46, gy - 25, 4, 9); ctx.fillRect(x + 51, gy - 25, 3, 9);
-  // telhado 1
-  ctx.fillStyle = roofD; ctx.fillRect(x - 6, gy - 38, 112, 2); ctx.fillRect(x - 8, gy - 40, 3, 2); ctx.fillRect(x + 105, gy - 40, 3, 2);
-  ctx.fillStyle = roof; ctx.fillRect(x - 4, gy - 36, 108, 2); ctx.fillStyle = roofL; ctx.fillRect(x - 4, gy - 36, 108, 1);
-  for (const gx of [x + 22, x + 78]) { pxTri(ctx, gx, gy - 46, 8, roofD); pxTri(ctx, gx, gy - 44, 6, wall); }
-  // 2º andar
-  ctx.fillStyle = wall; ctx.fillRect(x + 14, gy - 52, 72, 14); ctx.fillStyle = wallS; ctx.fillRect(x + 80, gy - 52, 6, 14);
-  ctx.fillStyle = win; [30, 38, 58, 66].forEach((o) => ctx.fillRect(x + o, gy - 48, 2, 4));
-  // telhado 2
-  ctx.fillStyle = roofD; ctx.fillRect(x + 6, gy - 55, 88, 2); ctx.fillRect(x + 4, gy - 57, 3, 2); ctx.fillRect(x + 93, gy - 57, 3, 2);
-  ctx.fillStyle = roof; ctx.fillRect(x + 8, gy - 53, 84, 1);
-  // 3º andar
-  ctx.fillStyle = wall; ctx.fillRect(x + 28, gy - 68, 44, 13); ctx.fillStyle = win; ctx.fillRect(x + 40, gy - 64, 20, 3);
-  // telhado superior
-  for (let i = 0; i < 12; i++) { ctx.fillStyle = i < 2 ? roofD : roof; ctx.fillRect(x + 46 - i * 2, gy - 82 + i, 8 + i * 4, 1); }
-  ctx.fillStyle = roofD; ctx.fillRect(x + 22, gy - 70, 56, 1); ctx.fillRect(x + 20, gy - 72, 3, 2); ctx.fillRect(x + 77, gy - 72, 3, 2);
-  ctx.fillStyle = roofL; ctx.fillRect(x + 49, gy - 85, 2, 3);
+
+  // 1º Andar (parede branca larga)
+  ctx.fillStyle = wall; ctx.fillRect(x + 2, gy - 38, 96, 24);
+  ctx.fillStyle = wallS; ctx.fillRect(x + 2, gy - 38, 96, 2); ctx.fillRect(x + 88, gy - 38, 10, 24);
+
+  // 6 janelas verticais estreitas alinhadas na parte superior do 1º andar (exatamente como na foto!)
+  ctx.fillStyle = win;
+  for (const wx of [12, 26, 41, 57, 72, 86]) {
+    ctx.fillRect(x + wx, gy - 33, 2, 6);
+  }
+
+  // Grupos de 3 frestas pequenas (|||) na parte baixa do 1º andar, ao lado da porta
+  ctx.fillStyle = slit;
+  for (const gx of [10, 22, 34, 62, 75]) {
+    ctx.fillRect(x + gx, gy - 19, 1, 3);
+    ctx.fillRect(x + gx + 2, gy - 19, 1, 3);
+    ctx.fillRect(x + gx + 4, gy - 19, 1, 3);
+  }
+
+  // Porta central escura + muretinhas cinzas do patamar de entrada
+  ctx.fillStyle = '#1c1917'; ctx.fillRect(x + 44, gy - 22, 12, 10);
+  ctx.fillStyle = '#3f2312'; ctx.fillRect(x + 45, gy - 21, 10, 9);
   if (night) {
-    ctx.fillStyle = 'rgba(253,224,71,0.18)';
-    ctx.fillRect(x + 40, gy - 16, 20, 16);
+    ctx.fillStyle = 'rgba(253,224,71,0.22)';
+    ctx.fillRect(x + 46, gy - 20, 8, 8);
   }
+  // Muretinhas cinzas do patamar em frente à porta
+  ctx.fillStyle = night ? '#64748b' : '#94a3b8';
+  ctx.fillRect(x + 26, gy - 12, 18, 4);
+  ctx.fillRect(x + 56, gy - 12, 18, 4);
+  ctx.fillStyle = night ? '#475569' : '#64748b';
+  ctx.fillRect(x + 26, gy - 8, 18, 2);
+  ctx.fillRect(x + 56, gy - 8, 18, 2);
+
+  // Telhado do 1º Andar (beiral largo curvado nas pontas)
+  ctx.fillStyle = roofD; ctx.fillRect(x - 6, gy - 41, 112, 2);
+  ctx.fillRect(x - 8, gy - 42, 3, 2); ctx.fillRect(x + 105, gy - 42, 3, 2);
+  ctx.fillStyle = roof; ctx.fillRect(x - 4, gy - 39, 108, 2);
+  ctx.fillStyle = roofL; ctx.fillRect(x - 4, gy - 39, 108, 1);
+
+  // 2º Andar (parede branca recuada)
+  ctx.fillStyle = wall; ctx.fillRect(x + 12, gy - 55, 76, 14);
+  ctx.fillStyle = wallS; ctx.fillRect(x + 12, gy - 55, 76, 1); ctx.fillRect(x + 80, gy - 55, 8, 14);
+
+  // 2 frontões triangulares (Chidori-hafu) com borda branca e interior cinza + 2 na lateral direita
+  for (const gx of [x + 28, x + 68]) {
+    pxTri(ctx, gx, gy - 50, 9, roofD);
+    pxTri(ctx, gx, gy - 49, 8, '#ffffff');
+    pxTri(ctx, gx, gy - 47, 6, gableFill);
+  }
+
+  // Janelas do 2º Andar: 2 janelas quadradas juntas ENTRE os frontões + 1 estreita em cada ponta!
+  ctx.fillStyle = win;
+  ctx.fillRect(x + 43, gy - 50, 4, 5);
+  ctx.fillRect(x + 50, gy - 50, 4, 5);
+  ctx.fillRect(x + 16, gy - 50, 2, 5);
+  ctx.fillRect(x + 78, gy - 50, 2, 5);
+
+  // Telhado do 2º Andar
+  ctx.fillStyle = roofD; ctx.fillRect(x + 4, gy - 58, 92, 2);
+  ctx.fillRect(x + 2, gy - 59, 3, 2); ctx.fillRect(x + 95, gy - 59, 3, 2);
+  ctx.fillStyle = roof; ctx.fillRect(x + 6, gy - 56, 88, 2);
+  ctx.fillStyle = roofL; ctx.fillRect(x + 6, gy - 56, 88, 1);
+
+  // 3º Andar (topo)
+  ctx.fillStyle = wall; ctx.fillRect(x + 24, gy - 71, 52, 13);
+  ctx.fillStyle = wallS; ctx.fillRect(x + 70, gy - 71, 6, 13);
+
+  // Frontão curvo branco (Karahafu) no centro do 3º andar com janela horizontal dividida
+  ctx.fillStyle = roofD;
+  ctx.fillRect(x + 37, gy - 69, 26, 1);
+  ctx.fillRect(x + 41, gy - 71, 18, 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + 38, gy - 68, 24, 9);
+  ctx.fillRect(x + 42, gy - 70, 16, 2);
+  // Janela horizontal dentro do arco central + divisórias brancas
+  ctx.fillStyle = win;
+  ctx.fillRect(x + 42, gy - 65, 16, 3);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + 47, gy - 65, 1, 3);
+  ctx.fillRect(x + 52, gy - 65, 1, 3);
+  // Janelinhas baixas laterais no 3º andar
+  ctx.fillStyle = win;
+  ctx.fillRect(x + 29, gy - 63, 3, 2);
+  ctx.fillRect(x + 68, gy - 63, 3, 2);
+
+  // Grande telhado superior (Irimoya) com frontão triangular branco e cinza voltado para a frente!
+  ctx.fillStyle = roofD;
+  ctx.fillRect(x + 16, gy - 73, 68, 2);
+  ctx.fillRect(x + 14, gy - 74, 3, 2); ctx.fillRect(x + 83, gy - 74, 3, 2);
+  // Triângulo principal do topo
+  pxTri(ctx, x + 50, gy - 88, 15, roofD);
+  pxTri(ctx, x + 50, gy - 86, 13, '#ffffff');
+  pxTri(ctx, x + 50, gy - 84, 11, gableFill);
+  // Beiral branco abaixo do arco superior
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + 36, gy - 73, 28, 1);
+  ctx.fillStyle = roofL;
+  ctx.fillRect(x + 49, gy - 90, 2, 2);
 }
 
 // ---------- Galho de cerejeira para os cantos da tela inicial ----------
