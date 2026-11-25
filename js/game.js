@@ -557,6 +557,11 @@ function hitLantern(l) {
     score += 500; st.score += 500;
     toast('🏮 ' + t('toast_lanterns'));
     unlock('lanterns');
+    if (cfg.secret && !secretFound) {
+      toast('⛩️ ' + t('toast_secret_unlocked'));
+      Audio8.sfx.secret();
+      burst(cfg.secret.x, cfg.secret.y - 14, 24, ['#ffd84d', '#ffffff', '#f472b6'], 2.2);
+    }
   }
 }
 
@@ -574,6 +579,7 @@ function hurt(e) {
 }
 
 const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+const isSecretUnlocked = () => !!(cfg.secret && !secretFound && lanterns.length > 0 && lanterns.every((x) => x.lit));
 
 // ================= Atualização =================
 function updatePetals() {
@@ -690,8 +696,8 @@ function update() {
     }
   }
 
-  // Fase secreta
-  if (cfg.secret && !secretFound) {
+  // Fase secreta (só aparece depois de acender todas as lanternas da fase)
+  if (isSecretUnlocked()) {
     const s = cfg.secret;
     if (overlap(player, { x: s.x - 11, y: s.y - 28, w: 22, h: 28 })) {
       secretFound = true;
@@ -987,7 +993,7 @@ function drawWorld() {
 
   if (cfg.castle) drawCastle(ctx, cfg.goalX - 50, GY, true, frame);
   else drawGoalPortal(cfg.goalX);
-  if (cfg.secret && !secretFound) drawSecretTorii(cfg.secret);
+  if (isSecretUnlocked()) drawSecretTorii(cfg.secret);
 
   for (const p of platforms) drawPlatform(p);
   for (const l of lanterns) drawLantern(l);
