@@ -448,7 +448,7 @@ function startGame(withIntro = true) {
 function showIntro() {
   const isSora = selectedCharacter === 'male';
   $('dialogue-speaker').textContent = isSora ? 'SORA' : 'RIKU';
-  $('dialogue-avatar-img').src = isSora ? 'assets/portrait-sora.png?v=10' : 'assets/portrait-riku.png?v=10';
+  $('dialogue-avatar-img').src = isSora ? 'assets/bust-sora.png?v=11' : 'assets/bust-riku.png?v=11';
   const full = t('dialogue_' + selectedCharacter);
   $('dialogue-text').textContent = '';
   $('dialogue-box').classList.remove('hidden');
@@ -1039,19 +1039,27 @@ function drawSign() {
 
 function drawPlayer() {
   if (player.inv > 0 && Math.floor(frame / 4) % 2 === 0) return;
-  const male = selectedCharacter === 'male';
-  let spr;
-  if (!player.onGround) {
-    spr = male ? SORA_JUMP : RIKU_JUMP;
-  } else if (Math.abs(player.vx) > 0.25) {
-    const step = Math.floor(frame / 6) % 4;
-    if (step === 0) spr = male ? SORA_WALK1 : RIKU_WALK1;
-    else if (step === 2) spr = male ? SORA_WALK2 : RIKU_WALK2;
-    else spr = male ? SORA_IDLE : RIKU_IDLE;
-  } else {
-    spr = male ? SORA_IDLE : RIKU_IDLE;
+  let anim = 'idle';
+  let idx = Math.floor(frame / 22);
+  if (player.inv > 65) {
+    anim = 'hurt';
+    idx = 0;
+  } else if (!player.onGround) {
+    if (player.vy < 0) {
+      anim = 'jump';
+      idx = Math.floor(frame / 10);
+    } else {
+      anim = 'fall';
+      idx = 0;
+    }
+  } else if (Math.abs(player.vx) > 1.45) {
+    anim = 'run';
+    idx = Math.floor(frame / 6);
+  } else if (Math.abs(player.vx) > 0.2) {
+    anim = 'walk';
+    idx = Math.floor(frame / 7);
   }
-  drawPixelMatrix(ctx, spr, player.x - 2, player.y - 3, player.facing < 0);
+  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, 26);
 }
 
 function drawWorld() {
@@ -1112,49 +1120,85 @@ function drawPetals() {
 }
 
 // ================= Tela inicial =================
+function drawNightCloudCluster(cx, cy, w) {
+  ctx.fillStyle = '#1b2c5e';
+  ctx.fillRect(cx - w / 2, cy, w, 6);
+  pxCircle(ctx, cx - w * 0.25, cy, 7, '#1b2c5e');
+  pxCircle(ctx, cx + w * 0.15, cy - 2, 9, '#1b2c5e');
+  ctx.fillStyle = '#263c7a';
+  ctx.fillRect(cx - w / 2 + 2, cy - 1, w - 4, 4);
+  pxCircle(ctx, cx - w * 0.22, cy - 1, 5, '#263c7a');
+  pxCircle(ctx, cx + w * 0.15, cy - 3, 7, '#263c7a');
+}
+
 function drawMenu() {
   theme = THEMES.night;
   bandedSky(THEMES.night.sky);
   drawStars();
-  drawMoon(318, 30);
-  // cidade de Assaí ao fundo (estática)
+  drawMoon(302, 34);
+
+  // Nuvens noturnas estilizadas em tons de azul-índigo
+  drawNightCloudCluster(56, 68, 72);
+  drawNightCloudCluster(112, 84, 54);
+  drawNightCloudCluster(324, 62, 68);
+  drawNightCloudCluster(280, 82, 48);
+
+  // Cidade de Assaí iluminada ao fundo (estática)
   drawCity(0, 166, 'night');
   drawCity(190, 160, 'night');
-  // colinas
+
+  // Colinas distantes suaves
   ctx.fillStyle = '#16233f';
   for (let x = 0; x < W; x += 2) { const h = Math.floor(12 + Math.sin(x * 0.03) * 4); ctx.fillRect(x, GY - h, 2, h); }
-  // morro do castelo com chão
+
+  // Morro central do Castelo Japonês com gramado no topo e talude de terra sombreado
   const cx = 192;
-  for (let x = 0; x < W; x++) {
+  for (let x = 82; x <= 302; x++) {
     const d = Math.abs(x - cx);
     let top;
-    if (d < 64) top = 156;
-    else if (d < 124) top = 156 + Math.floor(((d - 64) / 60) * (GY - 156));
-    else continue;
-    ctx.fillStyle = '#2a6b3c'; ctx.fillRect(x, top, 1, 2);
-    ctx.fillStyle = '#4a3322'; ctx.fillRect(x, top + 2, 1, GY - top);
-    if (x % 5 === 0) { ctx.fillStyle = '#5c4430'; ctx.fillRect(x, top + 6 + (x % 9), 1, 1); }
+    if (d <= 62) top = 148;
+    else top = 148 + Math.floor(((d - 62) / 48) * (GY - 148));
+    if (top >= GY) continue;
+    // Grama verde no topo da rampa/platô
+    ctx.fillStyle = '#47a358'; ctx.fillRect(x, top, 1, 2);
+    ctx.fillStyle = '#2c7a3e'; ctx.fillRect(x, top + 2, 1, 2);
+    // Talude de terra marrom texturizada
+    ctx.fillStyle = '#523420'; ctx.fillRect(x, top + 4, 1, GY - top - 4);
+    if (x % 4 === 0) { ctx.fillStyle = '#6b452b'; ctx.fillRect(x, top + 7 + (x % 9), 2, 2); }
+    if (x % 6 === 0) { ctx.fillStyle = '#3b2415'; ctx.fillRect(x, top + 12 + (x % 7), 2, 2); }
   }
-  // escadaria de pedra subindo até o castelo
-  for (let i = 0; i < 14; i++) {
-    const sx = 250 + i * 4, sy = 156 + i * 2;
-    ctx.fillStyle = '#9ca3af'; ctx.fillRect(sx, sy, 6, 2);
-    ctx.fillStyle = '#6b7280'; ctx.fillRect(sx, sy + 2, 6, 1);
+
+  // Escadarias laterais de pedra subindo o morro (esquerda e direita, como na referência!)
+  for (let i = 0; i < 18; i++) {
+    const sy = 148 + i * 2;
+    const lx = 128 - Math.floor(i * 2.5);
+    const rx = 252 + Math.floor(i * 2.5);
+    ctx.fillStyle = '#94a3b8'; ctx.fillRect(lx, sy, 6, 1); ctx.fillRect(rx, sy, 6, 1);
+    ctx.fillStyle = '#475569'; ctx.fillRect(lx, sy + 1, 6, 1); ctx.fillRect(rx, sy + 1, 6, 1);
   }
-  // castelo no topo
-  drawCastle(ctx, cx - 50, 156, true, frame);
-  // chão
-  ctx.fillStyle = '#1f5a36'; ctx.fillRect(0, GY, W, 3);
-  ctx.fillStyle = '#3b210f'; ctx.fillRect(0, GY + 3, W, H - GY);
-  ctx.fillStyle = '#2f7a48'; for (let x = 0; x < W; x += 4) ctx.fillRect(x, GY - 1, 1, 1);
-  // torii vermelho no pé da escadaria, tōrōs e árvores
-  drawToriiBack(ctx, 318, GY); drawToriiFront(ctx, 318, GY);
-  drawPixelMatrix(ctx, TORO, 116, GY - 12);
-  drawPixelMatrix(ctx, TORO, 262, GY - 12);
-  drawTree(ctx, 34, GY, 'sakura');
-  drawTree(ctx, 80, GY, 'ipe-branco');
-  drawTree(ctx, 362, GY, 'ipe-amarelo');
-  // galhos de cerejeira nos cantos (desenhados por cima de tudo)
+
+  // Castelo Japonês de Assaí iluminado no topo do morro
+  drawCastle(ctx, cx - 50, 148, true, frame);
+
+  // Chão principal com grama rica e terra texturizada
+  ctx.fillStyle = '#47a358'; ctx.fillRect(0, GY, W, 2);
+  ctx.fillStyle = '#2c7a3e'; ctx.fillRect(0, GY + 2, W, 2);
+  ctx.fillStyle = '#422817'; ctx.fillRect(0, GY + 4, W, H - GY - 4);
+  ctx.fillStyle = '#68c26e';
+  for (let x = 0; x < W; x += 5) ctx.fillRect(x, GY - 1, 2, 1);
+  for (let x = 4; x < W; x += 14) {
+    ctx.fillStyle = '#593720'; ctx.fillRect(x, GY + 8 + (x % 11), 3, 2);
+    ctx.fillStyle = '#2e1b0f'; ctx.fillRect(x + 6, GY + 15 + (x % 9), 2, 2);
+  }
+
+  // Árvores e Torii posicionados exatamente como na composição de referência
+  drawTree(ctx, 36, GY, 'sakura');
+  drawTree(ctx, 82, GY, 'ipe-branco');
+  drawToriiBack(ctx, 314, GY);
+  drawToriiFront(ctx, 314, GY);
+  drawTree(ctx, 358, GY, 'ipe-amarelo');
+
+  // Galhos de cerejeira nos cantos superiores e pétalas caindo
   drawSakuraBranch(ctx, W, false);
   drawSakuraBranch(ctx, W, true);
   drawPetals();
@@ -1162,8 +1206,12 @@ function drawMenu() {
 
 // ================= Loop =================
 function draw() {
+  ctx.save();
+  ctx.scale(2, 2);
+  ctx.imageSmoothingEnabled = false;
   if (state === 'menu') drawMenu();
   else drawWorld();
+  ctx.restore();
 }
 
 let last = performance.now(), acc = 0;

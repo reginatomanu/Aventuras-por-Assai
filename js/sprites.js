@@ -1,5 +1,5 @@
-// Sprites e cenário em Pixel Art — TODOS desenhados na mesma densidade (1 pixel lógico)
-// O canvas tem resolução nativa de 384x216 e é ampliado sem suavização.
+// Sprites e cenário estilizados — Aventuras por Assaí
+// Suporta sprite sheet chibi de alta definição (assets/char-sheet.png) + cenário 16-bit rico
 
 const PALETTE = {
   K: '#141824', H: '#252b42', S: '#ffcca8', s: '#e09b70', C: '#f48fb1', R: '#dc2626', r: '#991b1b',
@@ -8,199 +8,80 @@ const PALETTE = {
   p: '#be185d', w: '#fbcfe8', G: '#22c55e', N: '#475569',
 };
 
-// ---------- Personagens (16x22) ----------
-const SORA_IDLE = [
-  '....KKKKKK.K....',
-  '..KKKKKKKKKKKK..',
-  '.KKHKKKKKKKKHKK.',
-  '.KKKKKKKKKKKKKK.',
-  '..KKSSSKKSSSKK..',
-  '.KSSSKSSSSKSSSK.',
-  '.KSSSKSSSSKSSSK.',
-  '..KSSSSSSSSSSK..',
-  '..KSSSSssSSSSK..',
-  '...KKSSSSSSKK...',
-  '..KYYBYYYYBYYK..',
-  '.KYYYBWBBWBYYYK.',
-  '.KSYYBBBBBBYYSK.',
-  '.KSSKBBbbBBKSSK.',
-  '.KSSKBBBBBBKSSK.',
-  '..KKBBBBBBBBKK..',
-  '...KBBBBBBBBK...',
-  '...KBBbKKbBBK...',
-  '...KBBBKKBBBK...',
-  '...KLLLKKLLLK...',
-  '..KDDDDKKDDDDK..',
-  '..KKKKKKKKKKKK..',
-];
-const SORA_WALK1 = [
-  '....KKKKKK.K....',
-  '..KKKKKKKKKKKK..',
-  '.KKHKKKKKKKKHKK.',
-  '.KKKKKKKKKKKKKK.',
-  '..KKSSSKKSSSKK..',
-  '.KSSSKSSSSKSSSK.',
-  '.KSSSKSSSSKSSSK.',
-  '..KSSSSSSSSSSK..',
-  '..KSSSSssSSSSK..',
-  '...KKSSSSSSKK...',
-  '..KYYBYYYYBYYK..',
-  '.KYYYBWBBWBYYYK.',
-  '.KSYYBBBBBBYYSK.',
-  '.KSSKBBbbBBKSSK.',
-  '..KKBBBBBBBBKK..',
-  '...KBBBBBBBBK...',
-  '..KBBBbKKbBBBK..',
-  '..KBBBK..KBBBK..',
-  '..KLLLK..KBBBK..',
-  '.KDDDDK..KLLLK..',
-  '.KKKKKK..KDDDDK.',
-  '.........KKKKKK.',
-];
-const SORA_WALK2 = [
-  '....KKKKKK.K....',
-  '..KKKKKKKKKKKK..',
-  '.KKHKKKKKKKKHKK.',
-  '.KKKKKKKKKKKKKK.',
-  '..KKSSSKKSSSKK..',
-  '.KSSSKSSSSKSSSK.',
-  '.KSSSKSSSSKSSSK.',
-  '..KSSSSSSSSSSK..',
-  '..KSSSSssSSSSK..',
-  '...KKSSSSSSKK...',
-  '..KYYBYYYYBYYK..',
-  '.KYYYBWBBWBYYYK.',
-  '.KSYYBBBBBBYYSK.',
-  '.KSSKBBbbBBKSSK.',
-  '..KKBBBBBBBBKK..',
-  '...KBBBBBBBBK...',
-  '..KBBBbKKbBBBK..',
-  '..KBBBK..KBBBK..',
-  '..KBBBK..KLLLK..',
-  '..KLLLK..KDDDDK.',
-  '.KDDDDK..KKKKKK.',
-  '.KKKKKK.........',
-];
-const SORA_JUMP = [
-  '....KKKKKK.K....',
-  '..KKKKKKKKKKKK..',
-  '.KKHKKKKKKKKHKK.',
-  '.KKKKKKKKKKKKKK.',
-  '..KKSSSKKSSSKK..',
-  '.KSSSKSSSSKSSSK.',
-  '.KSSSKSSSSKSSSK.',
-  '..KSSSSSSSSSSKK.',
-  '..KSSSSssSSSSSSK',
-  '...KKSSSSSSKKYYK',
-  '..KYYBYYYYBYYYYK',
-  '.KSYYBWBBWBYYKK.',
-  '.KSSKBBBBBBBBK..',
-  '..KKKBBbbBBBBK..',
-  '...KBBBBBBBBBK..',
-  '..KBBBbKKbBBBK..',
-  '.KLLLK....KLLLK.',
-  '.KDDDDK..KDDDDK.',
-  '.KKKKKK..KKKKKK.',
-  '................',
-  '................',
-  '................',
-];
-const RIKU_IDLE = [
-  '....KKKKKKKK....',
-  '..KKKKKKKKYYKK..',
-  '.KKHKKKKKYyyYYK.',
-  '.KKKKKKKKKYYKKK.',
-  '.KKKSSSSKKSSKKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSCSSSSSSCSKK.',
-  '.KKKSSSssSSSKKK.',
-  '.KKKKSSSSSSKKKK.',
-  '..KKBBBBBBBBKK..',
-  '.KBBBBBBBBBBBBK.',
-  '.KSBBLBBBBBLBSK.',
-  '.KSSKYYyyYYKSSK.',
-  '.KSSKBBBBBBKSSK.',
-  '..KKBBBBBBBBKK..',
-  '.KBBBBbBBbBBBBK.',
-  '.KBBBBbBBbBBBBK.',
-  '..KKKKKKKKKKKK..',
-  '...KSSK..KSSK...',
-  '...KWWK..KWWK...',
-  '..KKKKK..KKKKK..',
-];
-const RIKU_WALK1 = [
-  '....KKKKKKKK....',
-  '..KKKKKKKKYYKK..',
-  '.KKHKKKKKYyyYYK.',
-  '.KKKKKKKKKYYKKK.',
-  '.KKKSSSSKKSSKKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSCSSSSSSCSKK.',
-  '.KKKSSSssSSSKKK.',
-  '.KKKKSSSSSSKKKK.',
-  '..KKBBBBBBBBKK..',
-  '.KBBBBBBBBBBBBK.',
-  '.KSBBLBBBBBLBSK.',
-  '.KSSKYYyyYYKSSK.',
-  '..KKBBBBBBBBKK..',
-  '.KBBBBbBBbBBBBK.',
-  '.KBBBBbBBbBBBBK.',
-  '..KKKKKKKKKKKK..',
-  '..KSSK....KSSK..',
-  '..KWWK....KSSK..',
-  '.KKKKK....KWWK..',
-  '.........KKKKK..',
-];
-const RIKU_WALK2 = [
-  '....KKKKKKKK....',
-  '..KKKKKKKKYYKK..',
-  '.KKHKKKKKYyyYYK.',
-  '.KKKKKKKKKYYKKK.',
-  '.KKKSSSSKKSSKKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSCSSSSSSCSKK.',
-  '.KKKSSSssSSSKKK.',
-  '.KKKKSSSSSSKKKK.',
-  '..KKBBBBBBBBKK..',
-  '.KBBBBBBBBBBBBK.',
-  '.KSBBLBBBBBLBSK.',
-  '.KSSKYYyyYYKSSK.',
-  '..KKBBBBBBBBKK..',
-  '.KBBBBbBBbBBBBK.',
-  '.KBBBBbBBbBBBBK.',
-  '..KKKKKKKKKKKK..',
-  '..KSSK....KSSK..',
-  '..KSSK....KWWK..',
-  '..KWWK....KKKKK.',
-  '..KKKKK.........',
-];
-const RIKU_JUMP = [
-  '....KKKKKKKK....',
-  '..KKKKKKKKYYKK..',
-  '.KKHKKKKKYyyYYK.',
-  '.KKKKKKKKKYYKKK.',
-  '.KKKSSSSKKSSKKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSSKSSSSKSSKK.',
-  '.KKSCSSSSSSCSKK.',
-  '.KKKSSSssSSSKKK.',
-  '.KKKKSSSSSSKKSSK',
-  '..KKBBBBBBBBBBBK',
-  '.KSBBLBBBBBLBBK.',
-  '.KSSKYYyyYYKKK..',
-  '..KKBBBBBBBBK...',
-  '.KBBBBbBBbBBBBK.',
-  '.KBBBBbBBbBBBBK.',
-  '..KKKKKKKKKKKK..',
-  '..KSSK....KSSK..',
-  '.KWWK......KWWK.',
-  '.KKKK......KKKK.',
-  '................',
-  '................',
-];
+// ---------- Sprite Sheet Chibi (assets/char-sheet.png) ----------
+const charSheetImg = new Image();
+charSheetImg.src = 'assets/char-sheet.png?v=11';
+
+const CHAR_ANIMS = {
+  male: {
+    idle: [
+      { x: 19, y: 430, w: 54, h: 87 },
+      { x: 79, y: 432, w: 51, h: 85 },
+      { x: 134, y: 432, w: 51, h: 85 },
+    ],
+    walk: [
+      { x: 208, y: 432, w: 50, h: 86 },
+      { x: 264, y: 432, w: 48, h: 86 },
+      { x: 317, y: 432, w: 49, h: 86 },
+    ],
+    run: [
+      { x: 399, y: 432, w: 60, h: 85 },
+      { x: 479, y: 432, w: 59, h: 83 },
+    ],
+    jump: [
+      { x: 567, y: 428, w: 50, h: 84 },
+      { x: 632, y: 428, w: 50, h: 83 },
+    ],
+    fall: [{ x: 702, y: 443, w: 58, h: 77 }],
+    hurt: [{ x: 21, y: 564, w: 55, h: 85 }],
+    dance: [
+      { x: 205, y: 556, w: 53, h: 94 },
+      { x: 278, y: 559, w: 54, h: 91 },
+      { x: 344, y: 558, w: 57, h: 92 },
+    ],
+  },
+  female: {
+    idle: [
+      { x: 15, y: 101, w: 61, h: 81 },
+      { x: 77, y: 101, w: 54, h: 81 },
+      { x: 132, y: 101, w: 51, h: 81 },
+    ],
+    walk: [
+      { x: 198, y: 101, w: 53, h: 81 },
+      { x: 252, y: 101, w: 51, h: 81 },
+      { x: 302, y: 101, w: 52, h: 81 },
+    ],
+    run: [
+      { x: 375, y: 101, w: 59, h: 77 },
+      { x: 434, y: 101, w: 49, h: 77 },
+      { x: 483, y: 100, w: 50, h: 78 },
+    ],
+    jump: [{ x: 552, y: 95, w: 65, h: 85 }],
+    fall: [{ x: 646, y: 99, w: 62, h: 82 }],
+    hurt: [{ x: 14, y: 229, w: 68, h: 81 }],
+    dance: [
+      { x: 197, y: 223, w: 63, h: 87 },
+      { x: 263, y: 225, w: 65, h: 86 },
+      { x: 336, y: 227, w: 59, h: 84 },
+    ],
+  },
+};
+
+function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flipX = false, targetHeight = 25) {
+  if (!charSheetImg.complete || !charSheetImg.naturalWidth) return;
+  const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
+  const list = set[animName] || set.idle;
+  const f = list[frameIdx % list.length];
+  const scale = targetHeight / f.h;
+  const dw = f.w * scale;
+  const dh = targetHeight;
+
+  ctx.save();
+  ctx.translate(centerX, bottomY);
+  if (flipX) ctx.scale(-1, 1);
+  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -dw / 2, -dh, dw, dh);
+  ctx.restore();
+}
 
 // ---------- Bichinho (joaninha/besouro fofo 14x10) ----------
 const BUG_A = [
@@ -213,14 +94,13 @@ const BUG_SQUASH = ['..KKKKKKKKKK..', '.KRRYRRRRYRRK.', 'KKKKKKKKKKKKKK', '.K.K.
 const BUG_NIGHT = { _id: 'bn', R: '#7c3aed', Y: '#fde047' };
 const BUG_SUNSET = { _id: 'bs', R: '#ea580c', Y: '#fef08a' };
 
-// ---------- Lanterna japonesa (design clássico Chōchin com tampa dourada, corpo oval e núcleo brilhante) ----------
+// ---------- Lanterna japonesa (design clássico Chōchin) ----------
 function drawJapaneseLantern(ctx, x, y, lit, frameCount, golden = false) {
   const cx = Math.floor(x + 6);
   const bob = Math.round(Math.sin(frameCount * 0.08 + x) * 1);
   const topY = Math.floor(y + bob);
 
   if (lit) {
-    // Halo de luz quente pulsante ao redor da lanterna acesa
     const pulse = 1 + Math.sin(frameCount * 0.18 + x) * 0.12;
     const radius = 18 * pulse;
     const grad = ctx.createRadialGradient(cx, topY + 8, 2, cx, topY + 8, radius);
@@ -233,59 +113,47 @@ function drawJapaneseLantern(ctx, x, y, lit, frameCount, golden = false) {
     ctx.fill();
   }
 
-  // Cordinha/suporte superior
   ctx.fillStyle = '#1e293b';
   ctx.fillRect(cx, topY - 2, 1, 3);
 
-  // Tampa superior (madeira escura + detalhe dourado)
   ctx.fillStyle = '#111827';
   ctx.fillRect(cx - 3, topY, 7, 2);
   ctx.fillStyle = '#facc15';
   ctx.fillRect(cx - 2, topY + 1, 5, 1);
 
-  // Contorno externo do corpo oval da lanterna
   ctx.fillStyle = '#111827';
   ctx.fillRect(cx - 5, topY + 2, 11, 11);
   ctx.fillRect(cx - 6, topY + 4, 13, 7);
 
   if (!lit) {
-    // Lanterna apagada (vermelho escuro fosco ou dourado escuro na fase secreta)
     ctx.fillStyle = golden ? '#92400e' : '#7f1d1d';
     ctx.fillRect(cx - 4, topY + 3, 9, 9);
     ctx.fillRect(cx - 5, topY + 4, 11, 7);
-    // Sombra/reflexo sutil central
     ctx.fillStyle = golden ? '#b45309' : '#991b1b';
     ctx.fillRect(cx - 3, topY + 4, 7, 7);
-    // Gomos horizontais da lanterna
     ctx.fillStyle = golden ? '#451a03' : '#450a0a';
     ctx.fillRect(cx - 5, topY + 5, 11, 1);
     ctx.fillRect(cx - 5, topY + 9, 11, 1);
   } else {
-    // Lanterna ACESA (vermelho/laranja vibrante + núcleo amarelo/branco brilhante!)
     ctx.fillStyle = golden ? '#f59e0b' : '#ef4444';
     ctx.fillRect(cx - 4, topY + 3, 9, 9);
     ctx.fillRect(cx - 5, topY + 4, 11, 7);
-    // Camada laranja quente
     ctx.fillStyle = '#fb923c';
     ctx.fillRect(cx - 3, topY + 4, 7, 7);
-    // Núcleo luminoso amarelo/branco
     ctx.fillStyle = '#fef08a';
     ctx.fillRect(cx - 2, topY + 5, 5, 5);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(cx - 1, topY + 6, 3, 3);
-    // Gomos horizontais iluminados
     ctx.fillStyle = golden ? '#d97706' : '#b91c1c';
     ctx.fillRect(cx - 5, topY + 5, 11, 1);
     ctx.fillRect(cx - 5, topY + 9, 11, 1);
   }
 
-  // Base inferior da lanterna
   ctx.fillStyle = '#111827';
   ctx.fillRect(cx - 3, topY + 13, 7, 2);
   ctx.fillStyle = '#facc15';
   ctx.fillRect(cx - 2, topY + 13, 5, 1);
 
-  // Borla (tassel) pendurada embaixo
   ctx.fillStyle = lit ? '#facc15' : '#b45309';
   ctx.fillRect(cx - 1, topY + 15, 3, 2);
   ctx.fillStyle = lit ? '#fef08a' : '#78350f';
@@ -395,183 +263,269 @@ function pxCircle(ctx, cx, cy, r, color) {
   }
 }
 
-// ---------- Árvores (cerejeira e ipês) ----------
+// ---------- Árvores estilizadas (copa arredondada em 4 tons + tronco sombreado com raízes) ----------
 const TREE_COLS = {
-  sakura: ['#c2477f', '#f28bbf', '#ffd1e6'],
-  'ipe-branco': ['#b9c4d2', '#eef2f7', '#ffffff'],
-  'ipe-amarelo': ['#c88f00', '#f5b301', '#ffe27a'],
-  'ipe-rosa': ['#a8326e', '#e7559b', '#ffa6cf'],
+  sakura: ['#8f295a', '#c94a86', '#f284b8', '#ffc4e1'],
+  'ipe-branco': ['#7d8ca3', '#b8c4d6', '#e6ecf5', '#ffffff'],
+  'ipe-amarelo': ['#9e6500', '#d69000', '#f5b800', '#ffe36e'],
+  'ipe-rosa': ['#7d2051', '#b83779', '#e862a6', '#ffb5da'],
 };
 
 function drawTree(ctx, x, gy, type) {
-  const [d, m, l] = TREE_COLS[type] || TREE_COLS.sakura;
-  ctx.fillStyle = '#5c3a21'; ctx.fillRect(x - 2, gy - 24, 4, 24);
-  ctx.fillStyle = '#3e2416'; ctx.fillRect(x + 1, gy - 24, 1, 24);
-  if (type !== 'sakura') { ctx.fillStyle = '#e8edf2'; ctx.fillRect(x - 2, gy - 7, 4, 7); } // tronco caiado das ruas de Assaí
-  ctx.fillStyle = '#5c3a21'; ctx.fillRect(x - 8, gy - 22, 6, 2); ctx.fillRect(x + 2, gy - 26, 7, 2);
-  ctx.fillStyle = d; ctx.fillRect(x - 15, gy - 40, 30, 14); ctx.fillRect(x - 18, gy - 34, 36, 7);
-  ctx.fillStyle = m; ctx.fillRect(x - 13, gy - 44, 26, 15); ctx.fillRect(x - 17, gy - 38, 34, 8); ctx.fillRect(x - 8, gy - 47, 14, 4);
-  ctx.fillStyle = l; ctx.fillRect(x - 9, gy - 45, 8, 3); ctx.fillRect(x - 15, gy - 37, 5, 3); ctx.fillRect(x + 5, gy - 41, 6, 3); ctx.fillRect(x - 2, gy - 33, 4, 2);
-  ctx.fillStyle = d; ctx.fillRect(x + 9, gy - 31, 2, 1); ctx.fillRect(x - 12, gy - 29, 2, 1); ctx.fillRect(x + 2, gy - 28, 2, 1);
+  const [c0, c1, c2, c3] = TREE_COLS[type] || TREE_COLS.sakura;
+  x = Math.round(x);
+
+  // Sombra no chão
+  ctx.fillStyle = 'rgba(10, 20, 35, 0.25)';
+  ctx.fillRect(x - 14, gy - 1, 28, 2);
+
+  // Tronco orgânico com raízes e galhos
+  ctx.fillStyle = '#3d2314';
+  ctx.fillRect(x - 5, gy - 3, 10, 3);
+  ctx.fillRect(x - 4, gy - 8, 8, 5);
+  ctx.fillRect(x - 3, gy - 24, 6, 16);
+  ctx.fillStyle = '#5e3720';
+  ctx.fillRect(x - 3, gy - 3, 6, 3);
+  ctx.fillRect(x - 2, gy - 24, 4, 21);
+  ctx.fillStyle = '#7a492b';
+  ctx.fillRect(x - 1, gy - 22, 2, 18);
+  // Galhos superiores aparentes
+  ctx.fillStyle = '#4a2b18';
+  ctx.fillRect(x - 8, gy - 23, 6, 2);
+  ctx.fillRect(x + 2, gy - 25, 7, 2);
+
+  // Copa arredondada multicamadas (igual à estilização de referência!)
+  // Camada de sombra base (c0)
+  pxCircle(ctx, x - 11, gy - 29, 9, c0);
+  pxCircle(ctx, x + 11, gy - 29, 9, c0);
+  pxCircle(ctx, x, gy - 27, 11, c0);
+  pxCircle(ctx, x, gy - 37, 13, c0);
+
+  // Camada média escura (c1)
+  pxCircle(ctx, x - 11, gy - 31, 9, c1);
+  pxCircle(ctx, x + 11, gy - 31, 9, c1);
+  pxCircle(ctx, x - 6, gy - 38, 10, c1);
+  pxCircle(ctx, x + 6, gy - 38, 10, c1);
+  pxCircle(ctx, x, gy - 41, 10, c1);
+
+  // Camada principal vibrante (c2)
+  pxCircle(ctx, x - 10, gy - 32, 7, c2);
+  pxCircle(ctx, x + 10, gy - 32, 7, c2);
+  pxCircle(ctx, x - 5, gy - 39, 8, c2);
+  pxCircle(ctx, x + 5, gy - 39, 8, c2);
+  pxCircle(ctx, x, gy - 42, 8, c2);
+  pxCircle(ctx, x, gy - 33, 8, c2);
+
+  // Brilhos superiores da copa (c3)
+  pxCircle(ctx, x - 5, gy - 43, 4, c3);
+  pxCircle(ctx, x + 4, gy - 44, 4, c3);
+  pxCircle(ctx, x - 11, gy - 35, 3, c3);
+  pxCircle(ctx, x + 10, gy - 35, 3, c3);
+  pxCircle(ctx, x, gy - 46, 4, c3);
 }
 
-// ---------- Torii (pilares atrás, vigas na frente: o personagem passa POR BAIXO) ----------
-function drawToriiBack(ctx, x, gy, col = '#c81e1e') {
-  ctx.fillStyle = col; ctx.fillRect(x - 15, gy - 40, 3, 40); ctx.fillRect(x + 12, gy - 40, 3, 40);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(x - 13, gy - 40, 1, 40); ctx.fillRect(x + 14, gy - 40, 1, 40);
-  ctx.fillStyle = '#8a8580'; ctx.fillRect(x - 16, gy - 3, 5, 3); ctx.fillRect(x + 11, gy - 3, 5, 3);
-}
-
-function drawToriiFront(ctx, x, gy, col = '#e02424', dark = '#1f2937') {
-  ctx.fillStyle = col; ctx.fillRect(x - 18, gy - 33, 36, 2); ctx.fillRect(x - 20, gy - 40, 40, 3);
-  ctx.fillStyle = dark; ctx.fillRect(x - 21, gy - 42, 42, 2); ctx.fillRect(x - 23, gy - 43, 3, 2); ctx.fillRect(x + 20, gy - 43, 3, 2);
-  ctx.fillRect(x - 2, gy - 38, 4, 6);
-  ctx.fillStyle = '#f5b301'; ctx.fillRect(x - 1, gy - 37, 2, 4);
-}
-
-// ---------- Castelo Japonês de Assaí (fiel à fachada real da foto) ----------
-function drawCastle(ctx, x, gy, night, frame) {
-  const wall = night ? '#d5deeb' : '#f8fafc', wallS = night ? '#94a3b8' : '#dbe3ec';
-  const roof = night ? '#46566e' : '#738296', roofD = night ? '#1e293b' : '#475569', roofL = night ? '#64748b' : '#94a3b8';
-  const gableFill = night ? '#64748b' : '#94a3b8';
-  const stone = night ? '#3a342f' : '#635951', stoneD = night ? '#231f1c' : '#433c36', stoneL = night ? '#524942' : '#7d7268';
-  const win = night ? '#fde047' : '#1e293b';
-  const slit = night ? '#cbd5e1' : '#334155';
-
-  // Torre de antena metálica à direita (como na foto real) e menor atrás à esquerda
-  ctx.fillStyle = night ? '#475569' : '#7b8794';
-  ctx.fillRect(x + 106, gy - 98, 1, 98); ctx.fillRect(x + 112, gy - 98, 1, 98);
-  for (let k = 0; k < 98; k += 7) {
-    ctx.fillRect(x + 106, gy - 98 + k, 7, 1);
-    for (let d = 0; d < 6; d++) ctx.fillRect(x + 106 + d, gy - 98 + k + d, 1, 1);
+// ---------- Torii estilizado (pilares atrás, vigas na frente) ----------
+function drawToriiBack(ctx, x, gy) {
+  x = Math.round(x);
+  // Pilares com volume cilíndrico (sombra, vermelho vivo e luz)
+  for (const px of [x - 15, x + 11]) {
+    ctx.fillStyle = '#7f1d1d'; ctx.fillRect(px, gy - 40, 4, 40);
+    ctx.fillStyle = '#dc2626'; ctx.fillRect(px + 1, gy - 40, 2, 40);
+    ctx.fillStyle = '#f87171'; ctx.fillRect(px + 1, gy - 40, 1, 36);
+    // Pedestal de pedra
+    ctx.fillStyle = '#475569'; ctx.fillRect(px - 1, gy - 5, 6, 5);
+    ctx.fillStyle = '#64748b'; ctx.fillRect(px, gy - 5, 4, 4);
+    ctx.fillStyle = '#94a3b8'; ctx.fillRect(px, gy - 5, 2, 1);
   }
-  ctx.fillStyle = Math.floor(frame / 30) % 2 ? '#ef4444' : '#7f1d1d';
-  ctx.fillRect(x + 108, gy - 100, 2, 2);
+}
 
-  // Base de pedra escura
-  ctx.fillStyle = stone; ctx.fillRect(x, gy - 14, 100, 14);
+function drawToriiFront(ctx, x, gy) {
+  x = Math.round(x);
+  // Viga inferior (Nuki)
+  ctx.fillStyle = '#991b1b'; ctx.fillRect(x - 19, gy - 33, 38, 3);
+  ctx.fillStyle = '#dc2626'; ctx.fillRect(x - 19, gy - 33, 38, 2);
+  // Viga superior curvada (Kasagi)
+  ctx.fillStyle = '#7f1d1d'; ctx.fillRect(x - 21, gy - 40, 42, 4);
+  ctx.fillStyle = '#ef4444'; ctx.fillRect(x - 21, gy - 40, 42, 2);
+  // Telhadinho escuro do Torii com pontas arrebitadas
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(x - 22, gy - 42, 44, 2);
+  ctx.fillRect(x - 24, gy - 43, 4, 2);
+  ctx.fillRect(x + 20, gy - 43, 4, 2);
+  // Plaqueta central dourada
+  ctx.fillStyle = '#7f1d1d'; ctx.fillRect(x - 2, gy - 37, 4, 5);
+  ctx.fillStyle = '#facc15'; ctx.fillRect(x - 1, gy - 36, 2, 3);
+}
+
+// ---------- Castelo Japonês de Assaí estilizado (com brilho quente nas janelas e sombreamento 16-bit) ----------
+function drawCastle(ctx, x, gy, night, frame) {
+  x = Math.round(x);
+  const wall = night ? '#d8e0ed' : '#f8fafc';
+  const wallMid = night ? '#b8c4d9' : '#e2e8f0';
+  const wallS = night ? '#8e9db8' : '#cbd5e1';
+  const roof = night ? '#2c3a57' : '#5b6b82';
+  const roofD = night ? '#162038' : '#334155';
+  const roofL = night ? '#495d82' : '#8596ad';
+  const gableFill = night ? '#495d82' : '#94a3b8';
+
+  // Duas torres de antena metálicas à direita (como na imagem de referência!)
+  const drawTower = (tx, th) => {
+    ctx.fillStyle = night ? '#3b4a68' : '#7b8794';
+    ctx.fillRect(tx, gy - th, 1, th);
+    ctx.fillRect(tx + 6, gy - th, 1, th);
+    for (let k = 0; k < th; k += 6) {
+      ctx.fillRect(tx, gy - th + k, 7, 1);
+      for (let d = 0; d < 6; d++) ctx.fillRect(tx + d, gy - th + k + d, 1, 1);
+    }
+    const blink = Math.floor(frame / 28) % 2 === 0;
+    ctx.fillStyle = blink ? '#ef4444' : '#991b1b';
+    ctx.fillRect(tx + 2, gy - th - 2, 3, 2);
+  };
+  drawTower(x + 106, 108);
+  drawTower(x + 118, 66);
+
+  // Base de pedra escura chanfrada com textura de blocos e escadaria central
+  ctx.fillStyle = night ? '#2d2a32' : '#57534e';
+  ctx.fillRect(x - 4, gy - 15, 108, 15);
+  ctx.fillStyle = night ? '#3e3a45' : '#6e6862';
+  ctx.fillRect(x - 2, gy - 14, 104, 13);
   for (let r = 0; r < 4; r++) {
-    ctx.fillStyle = stoneD; ctx.fillRect(x, gy - 14 + r * 3, 100, 1);
-    for (let c = (r % 2) * 4; c < 100; c += 8) {
-      ctx.fillRect(x + c, gy - 13 + r * 3, 1, 2);
-      ctx.fillStyle = stoneL; ctx.fillRect(x + c + 2, gy - 12 + r * 3, 2, 1);
-      ctx.fillStyle = stoneD;
+    ctx.fillStyle = night ? '#1c1a21' : '#3f3b37';
+    ctx.fillRect(x - 3, gy - 15 + r * 4, 106, 1);
+    for (let c = (r % 2) * 5; c < 104; c += 10) {
+      ctx.fillRect(x - 2 + c, gy - 14 + r * 4, 1, 3);
+      ctx.fillStyle = night ? '#524d5c' : '#857d76';
+      ctx.fillRect(x + c, gy - 13 + r * 4, 3, 1);
+      ctx.fillStyle = night ? '#1c1a21' : '#3f3b37';
     }
   }
-
-  // 1º Andar (parede branca larga)
-  ctx.fillStyle = wall; ctx.fillRect(x + 2, gy - 38, 96, 24);
-  ctx.fillStyle = wallS; ctx.fillRect(x + 2, gy - 38, 96, 2); ctx.fillRect(x + 88, gy - 38, 10, 24);
-
-  // 6 janelas verticais estreitas alinhadas na parte superior do 1º andar (exatamente como na foto!)
-  ctx.fillStyle = win;
-  for (const wx of [12, 26, 41, 57, 72, 86]) {
-    ctx.fillRect(x + wx, gy - 33, 2, 6);
+  // Muretinhas e escadaria central na base
+  ctx.fillStyle = night ? '#4b4754' : '#78716c';
+  ctx.fillRect(x + 24, gy - 14, 18, 8);
+  ctx.fillRect(x + 58, gy - 14, 18, 8);
+  ctx.fillStyle = night ? '#635e6e' : '#948d86';
+  ctx.fillRect(x + 24, gy - 14, 18, 2);
+  ctx.fillRect(x + 58, gy - 14, 18, 2);
+  // Degraus centrais
+  for (let s = 0; s < 4; s++) {
+    ctx.fillStyle = s % 2 === 0 ? '#3e3a45' : '#26232b';
+    ctx.fillRect(x + 42 - s, gy - 12 + s * 3, 16 + s * 2, 3);
   }
 
-  // Grupos de 3 frestas pequenas (|||) na parte baixa do 1º andar, ao lado da porta
-  ctx.fillStyle = slit;
-  for (const gx of [10, 22, 34, 62, 75]) {
-    ctx.fillRect(x + gx, gy - 19, 1, 3);
-    ctx.fillRect(x + gx + 2, gy - 19, 1, 3);
-    ctx.fillRect(x + gx + 4, gy - 19, 1, 3);
+  // Função para desenhar janela iluminada com halo quente à noite
+  const drawWin = (wx, wy, ww, wh) => {
+    if (night) {
+      ctx.fillStyle = 'rgba(255, 200, 70, 0.25)';
+      ctx.fillRect(wx - 2, wy - 2, ww + 4, wh + 4);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(wx - 1, wy - 1, ww + 2, wh + 2);
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(wx, wy, ww, wh);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(wx, wy, Math.max(1, ww - 1), Math.max(1, wh - 2));
+    } else {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(wx - 1, wy - 1, ww + 2, wh + 2);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(wx, wy, ww, wh);
+    }
+  };
+
+  // 1º Andar (parede branca larga com sombreamento lateral e sob o beiral)
+  ctx.fillStyle = wall; ctx.fillRect(x + 2, gy - 38, 96, 23);
+  ctx.fillStyle = wallMid; ctx.fillRect(x + 2, gy - 38, 96, 3); ctx.fillRect(x + 86, gy - 38, 12, 23);
+  ctx.fillStyle = wallS; ctx.fillRect(x + 2, gy - 38, 96, 1); ctx.fillRect(x + 92, gy - 38, 6, 23);
+
+  // 6 janelas iluminadas alinhadas no 1º andar
+  for (const wx of [11, 25, 39, 58, 72, 86]) {
+    drawWin(x + wx, gy - 32, 3, 6);
   }
 
-  // Porta central escura + muretinhas cinzas do patamar de entrada
-  ctx.fillStyle = '#1c1917'; ctx.fillRect(x + 44, gy - 22, 12, 10);
-  ctx.fillStyle = '#3f2312'; ctx.fillRect(x + 45, gy - 21, 10, 9);
-  if (night) {
-    ctx.fillStyle = 'rgba(253,224,71,0.22)';
-    ctx.fillRect(x + 46, gy - 20, 8, 8);
+  // Porta dupla de madeira no centro do 1º andar
+  ctx.fillStyle = '#29170b'; ctx.fillRect(x + 44, gy - 25, 12, 11);
+  ctx.fillStyle = '#63371a'; ctx.fillRect(x + 45, gy - 24, 5, 10); ctx.fillRect(x + 51, gy - 24, 4, 10);
+  ctx.fillStyle = '#7c4724'; ctx.fillRect(x + 46, gy - 23, 3, 8); ctx.fillRect(x + 51, gy - 23, 3, 8);
+
+  // Telhado do 1º Andar (em camadas azul-marinho escuro)
+  ctx.fillStyle = roofD;
+  ctx.fillRect(x - 7, gy - 41, 114, 3);
+  ctx.fillRect(x - 9, gy - 42, 4, 2); ctx.fillRect(x + 105, gy - 42, 4, 2);
+  ctx.fillStyle = roof;
+  ctx.fillRect(x - 5, gy - 43, 110, 2);
+  ctx.fillRect(x - 2, gy - 45, 104, 2);
+  ctx.fillStyle = roofL;
+  ctx.fillRect(x - 5, gy - 43, 110, 1);
+
+  // 2º Andar
+  ctx.fillStyle = wall; ctx.fillRect(x + 12, gy - 58, 76, 13);
+  ctx.fillStyle = wallMid; ctx.fillRect(x + 12, gy - 58, 76, 2); ctx.fillRect(x + 78, gy - 58, 10, 13);
+
+  // 2 frontões triangulares (Chidori-hafu) no 2º andar
+  for (const gx of [x + 26, x + 74]) {
+    pxTri(ctx, gx, gy - 54, 11, roofD);
+    pxTri(ctx, gx, gy - 52, 9, '#ffffff');
+    pxTri(ctx, gx, gy - 50, 7, gableFill);
   }
-  // Muretinhas cinzas do patamar em frente à porta
-  ctx.fillStyle = night ? '#64748b' : '#94a3b8';
-  ctx.fillRect(x + 26, gy - 12, 18, 4);
-  ctx.fillRect(x + 56, gy - 12, 18, 4);
-  ctx.fillStyle = night ? '#475569' : '#64748b';
-  ctx.fillRect(x + 26, gy - 8, 18, 2);
-  ctx.fillRect(x + 56, gy - 8, 18, 2);
-
-  // Telhado do 1º Andar (beiral largo curvado nas pontas)
-  ctx.fillStyle = roofD; ctx.fillRect(x - 6, gy - 41, 112, 2);
-  ctx.fillRect(x - 8, gy - 42, 3, 2); ctx.fillRect(x + 105, gy - 42, 3, 2);
-  ctx.fillStyle = roof; ctx.fillRect(x - 4, gy - 39, 108, 2);
-  ctx.fillStyle = roofL; ctx.fillRect(x - 4, gy - 39, 108, 1);
-
-  // 2º Andar (parede branca recuada)
-  ctx.fillStyle = wall; ctx.fillRect(x + 12, gy - 55, 76, 14);
-  ctx.fillStyle = wallS; ctx.fillRect(x + 12, gy - 55, 76, 1); ctx.fillRect(x + 80, gy - 55, 8, 14);
-
-  // 2 frontões triangulares (Chidori-hafu) com borda branca e interior cinza + 2 na lateral direita
-  for (const gx of [x + 28, x + 68]) {
-    pxTri(ctx, gx, gy - 50, 9, roofD);
-    pxTri(ctx, gx, gy - 49, 8, '#ffffff');
-    pxTri(ctx, gx, gy - 47, 6, gableFill);
-  }
-
-  // Janelas do 2º Andar: 2 janelas quadradas juntas ENTRE os frontões + 1 estreita em cada ponta!
-  ctx.fillStyle = win;
-  ctx.fillRect(x + 43, gy - 50, 4, 5);
-  ctx.fillRect(x + 50, gy - 50, 4, 5);
-  ctx.fillRect(x + 16, gy - 50, 2, 5);
-  ctx.fillRect(x + 78, gy - 50, 2, 5);
+  // Janelas do 2º andar: 2 juntas no centro (entre os frontões) + 1 em cada lateral
+  drawWin(x + 44, gy - 53, 3, 5);
+  drawWin(x + 52, gy - 53, 3, 5);
+  drawWin(x + 15, gy - 53, 2, 5);
+  drawWin(x + 82, gy - 53, 2, 5);
 
   // Telhado do 2º Andar
-  ctx.fillStyle = roofD; ctx.fillRect(x + 4, gy - 58, 92, 2);
-  ctx.fillRect(x + 2, gy - 59, 3, 2); ctx.fillRect(x + 95, gy - 59, 3, 2);
-  ctx.fillStyle = roof; ctx.fillRect(x + 6, gy - 56, 88, 2);
-  ctx.fillStyle = roofL; ctx.fillRect(x + 6, gy - 56, 88, 1);
+  ctx.fillStyle = roofD;
+  ctx.fillRect(x + 3, gy - 61, 94, 3);
+  ctx.fillRect(x + 1, gy - 62, 4, 2); ctx.fillRect(x + 95, gy - 62, 4, 2);
+  ctx.fillStyle = roof;
+  ctx.fillRect(x + 6, gy - 63, 88, 2);
+  ctx.fillRect(x + 10, gy - 65, 80, 2);
+  ctx.fillStyle = roofL;
+  ctx.fillRect(x + 6, gy - 63, 88, 1);
 
   // 3º Andar (topo)
-  ctx.fillStyle = wall; ctx.fillRect(x + 24, gy - 71, 52, 13);
-  ctx.fillStyle = wallS; ctx.fillRect(x + 70, gy - 71, 6, 13);
+  ctx.fillStyle = wall; ctx.fillRect(x + 22, gy - 77, 56, 12);
+  ctx.fillStyle = wallMid; ctx.fillRect(x + 22, gy - 77, 56, 2); ctx.fillRect(x + 70, gy - 77, 8, 12);
 
-  // Frontão curvo branco (Karahafu) no centro do 3º andar com janela horizontal dividida
-  ctx.fillStyle = roofD;
-  ctx.fillRect(x + 37, gy - 69, 26, 1);
-  ctx.fillRect(x + 41, gy - 71, 18, 2);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(x + 38, gy - 68, 24, 9);
-  ctx.fillRect(x + 42, gy - 70, 16, 2);
-  // Janela horizontal dentro do arco central + divisórias brancas
-  ctx.fillStyle = win;
-  ctx.fillRect(x + 42, gy - 65, 16, 3);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(x + 47, gy - 65, 1, 3);
-  ctx.fillRect(x + 52, gy - 65, 1, 3);
-  // Janelinhas baixas laterais no 3º andar
-  ctx.fillStyle = win;
-  ctx.fillRect(x + 29, gy - 63, 3, 2);
-  ctx.fillRect(x + 68, gy - 63, 3, 2);
+  // Janelas iluminadas do 3º andar (3 centrais + 1 em cada lateral, como no mockup!)
+  drawWin(x + 27, gy - 73, 3, 5);
+  drawWin(x + 42, gy - 74, 3, 6);
+  drawWin(x + 48, gy - 74, 4, 6);
+  drawWin(x + 55, gy - 74, 3, 6);
+  drawWin(x + 70, gy - 73, 3, 5);
 
-  // Grande telhado superior (Irimoya) com frontão triangular branco e cinza voltado para a frente!
+  // Grande telhado superior (Irimoya) com frontão triangular branco e azul-acinzentado
   ctx.fillStyle = roofD;
-  ctx.fillRect(x + 16, gy - 73, 68, 2);
-  ctx.fillRect(x + 14, gy - 74, 3, 2); ctx.fillRect(x + 83, gy - 74, 3, 2);
-  // Triângulo principal do topo
-  pxTri(ctx, x + 50, gy - 88, 15, roofD);
-  pxTri(ctx, x + 50, gy - 86, 13, '#ffffff');
-  pxTri(ctx, x + 50, gy - 84, 11, gableFill);
-  // Beiral branco abaixo do arco superior
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(x + 36, gy - 73, 28, 1);
+  ctx.fillRect(x + 13, gy - 80, 74, 3);
+  ctx.fillRect(x + 11, gy - 81, 4, 2); ctx.fillRect(x + 85, gy - 81, 4, 2);
+  ctx.fillStyle = roof;
+  ctx.fillRect(x + 16, gy - 82, 68, 2);
+  pxTri(ctx, x + 50, gy - 96, 16, roofD);
+  pxTri(ctx, x + 50, gy - 94, 14, '#ffffff');
+  pxTri(ctx, x + 50, gy - 92, 11, gableFill);
   ctx.fillStyle = roofL;
-  ctx.fillRect(x + 49, gy - 90, 2, 2);
+  ctx.fillRect(x + 49, gy - 98, 2, 2);
 }
 
-// ---------- Galho de cerejeira para os cantos da tela inicial ----------
+// ---------- Galho de cerejeira rico para os cantos da tela inicial ----------
 function drawSakuraBranch(ctx, W, flip) {
   const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(flip ? W - x - w : x, y, w, h); };
-  const wood = '#3b2433';
-  R(0, 4, 74, 3, wood); R(40, 7, 34, 2, wood); R(68, 9, 22, 2, wood);
-  R(16, 7, 3, 26, wood); R(52, 9, 2, 20, wood); R(30, 7, 2, 10, wood);
-  const clusters = [[6, 6], [22, 2], [38, 8], [56, 5], [74, 10], [88, 12], [14, 22], [30, 16], [50, 24], [66, 18], [8, 36], [24, 34], [52, 32]];
-  for (const [bx, by] of clusters) {
-    R(bx - 6, by - 2, 13, 7, '#be185d');
-    R(bx - 5, by - 4, 11, 7, '#f472b6');
-    R(bx - 7, by - 1, 15, 4, '#f472b6');
-    R(bx - 3, by - 3, 4, 2, '#fde2f0');
-    R(bx + 2, by, 2, 1, '#fde2f0');
-    R(bx, by + 1, 1, 1, '#f5b301');
+  const C = (cx, cy, r, c) => { pxCircle(ctx, flip ? W - cx : cx, cy, r, c); };
+
+  // Galhos de madeira sombreados
+  R(0, 4, 82, 4, '#2d1628'); R(0, 5, 80, 2, '#4f2842');
+  R(42, 8, 38, 3, '#2d1628'); R(68, 10, 26, 2, '#2d1628');
+  R(14, 8, 4, 28, '#2d1628'); R(15, 8, 2, 26, '#4f2842');
+  R(52, 10, 3, 22, '#2d1628');
+
+  // Clusters arredondados de flores de cerejeira em 4 tons
+  const clusters = [
+    [10, 10, 8], [26, 6, 7], [42, 11, 7], [60, 7, 7], [78, 12, 7], [92, 14, 6],
+    [16, 24, 8], [32, 18, 6], [52, 26, 7], [68, 20, 6], [8, 38, 7], [24, 35, 6],
+  ];
+  for (const [bx, by, br] of clusters) {
+    C(bx, by + 1, br, '#9d2463');
+    C(bx, by, br - 1, '#df4b94');
+    C(bx - 1, by - 1, Math.max(2, br - 2), '#f786be');
+    C(bx - 2, by - 2, Math.max(1, br - 4), '#ffd1e8');
   }
 }
