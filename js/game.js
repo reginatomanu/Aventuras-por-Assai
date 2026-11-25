@@ -1041,19 +1041,10 @@ function drawPlayer() {
   if (player.inv > 0 && Math.floor(frame / 4) % 2 === 0) return;
   const male = selectedCharacter === 'male';
   let spr;
-  let bobY = 0;
-  if (!player.onGround) {
-    spr = male ? SORA_JUMP : RIKU_JUMP;
-  } else if (Math.abs(player.vx) > 0.25) {
-    const step = Math.floor(frame / 6) % 4;
-    if (step === 0) spr = male ? SORA_WALK1 : RIKU_WALK1;
-    else if (step === 2) spr = male ? SORA_WALK2 : RIKU_WALK2;
-    else spr = male ? SORA_IDLE : RIKU_IDLE;
-  } else {
-    spr = male ? SORA_IDLE : RIKU_IDLE;
-    bobY = Math.floor(frame / 32) % 2 === 0 ? 0 : 1;
-  }
-  drawPixelMatrix(ctx, spr, player.x - 2, player.y - 1 + bobY, player.facing < 0);
+  if (!player.onGround) spr = male ? SORA_JUMP : RIKU_JUMP;
+  else if (Math.abs(player.vx) > 0.3 && Math.floor(frame / 8) % 2 === 0) spr = male ? SORA_WALK : RIKU_WALK;
+  else spr = male ? SORA_IDLE : RIKU_IDLE;
+  drawPixelMatrix(ctx, spr, player.x - 2, player.y - 1, player.facing < 0);
 }
 
 function drawWorld() {
