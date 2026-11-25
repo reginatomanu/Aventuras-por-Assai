@@ -1034,12 +1034,12 @@ function drawMenu() {
   bandedSky(THEMES.night.sky);
   drawStars();
   drawMoon(318, 30);
-  // cidade de Assaí ao fundo
-  drawCity(-frame * 0.06, 166, 'night');
-  drawCity(-frame * 0.03 + 190, 160, 'night');
+  // cidade de Assaí ao fundo (estática)
+  drawCity(0, 166, 'night');
+  drawCity(190, 160, 'night');
   // colinas
   ctx.fillStyle = '#16233f';
-  for (let x = 0; x < W; x += 2) { const h = Math.floor(12 + Math.sin((x + frame * 0.05) * 0.03) * 4); ctx.fillRect(x, GY - h, 2, h); }
+  for (let x = 0; x < W; x += 2) { const h = Math.floor(12 + Math.sin(x * 0.03) * 4); ctx.fillRect(x, GY - h, 2, h); }
   // morro do castelo com chão
   const cx = 192;
   for (let x = 0; x < W; x++) {
