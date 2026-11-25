@@ -10,82 +10,24 @@ const PALETTE = {
 
 // ---------- Sprite Sheet Chibi (assets/char-sheet.png) ----------
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=11';
 
-const CHAR_ANIMS = {
-  male: {
-    idle: [
-      { x: 19, y: 430, w: 54, h: 87 },
-      { x: 79, y: 432, w: 51, h: 85 },
-      { x: 134, y: 432, w: 51, h: 85 },
-    ],
-    walk: [
-      { x: 208, y: 432, w: 50, h: 86 },
-      { x: 264, y: 432, w: 48, h: 86 },
-      { x: 317, y: 432, w: 49, h: 86 },
-    ],
-    run: [
-      { x: 399, y: 432, w: 60, h: 85 },
-      { x: 479, y: 432, w: 59, h: 83 },
-    ],
-    jump: [
-      { x: 567, y: 428, w: 50, h: 84 },
-      { x: 632, y: 428, w: 50, h: 83 },
-    ],
-    fall: [{ x: 702, y: 443, w: 58, h: 77 }],
-    hurt: [{ x: 21, y: 564, w: 55, h: 85 }],
-    dance: [
-      { x: 205, y: 556, w: 53, h: 94 },
-      { x: 278, y: 559, w: 54, h: 91 },
-      { x: 344, y: 558, w: 57, h: 92 },
-    ],
-  },
-  female: {
-    idle: [
-      { x: 15, y: 101, w: 61, h: 81 },
-      { x: 77, y: 101, w: 54, h: 81 },
-      { x: 132, y: 101, w: 51, h: 81 },
-    ],
-    walk: [
-      { x: 198, y: 101, w: 53, h: 81 },
-      { x: 252, y: 101, w: 51, h: 81 },
-      { x: 302, y: 101, w: 52, h: 81 },
-    ],
-    run: [
-      { x: 375, y: 101, w: 59, h: 77 },
-      { x: 434, y: 101, w: 49, h: 77 },
-      { x: 483, y: 100, w: 50, h: 78 },
-    ],
-    jump: [{ x: 552, y: 95, w: 65, h: 85 }],
-    fall: [{ x: 646, y: 99, w: 62, h: 82 }],
-    hurt: [{ x: 14, y: 229, w: 68, h: 81 }],
-    dance: [
-      { x: 197, y: 223, w: 63, h: 87 },
-      { x: 263, y: 225, w: 65, h: 86 },
-      { x: 336, y: 227, w: 59, h: 84 },
-    ],
-  },
-};
+charSheetImg.src = 'assets/char-sheet-lo.png?v=13';
 
-function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flipX = false, targetHeight = 25, yOffset = 0) {
+// CHAR_ANIMS vem de assets/char-anims.js (sprite sheet reamostrada 3x, pixel art nitida)
+// Desenho em escala 1:1 (inteira) para manter os pixels perfeitos; base dos pes ancorada em bottomY.
+function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flipX = false, yOffset = 0) {
   if (!charSheetImg.complete || !charSheetImg.naturalWidth) return;
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
-  // Escala FIXA por personagem (baseada no quadro idle): evita que o sprite "pulse"/tremule ao trocar de quadro
-  const scale = targetHeight / set.idle[0].h;
-  // Posição inteira (pixel perfeito) para não borrar nem vibrar
-  const dw = Math.round(f.w * scale);
-  const dh = Math.round(f.h * scale);
 
   ctx.save();
+  ctx.imageSmoothingEnabled = false;
   ctx.translate(Math.round(centerX), Math.round(bottomY + yOffset));
   if (flipX) ctx.scale(-1, 1);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -Math.round(dw / 2), -dh, dw, dh);
+  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -Math.round(f.w / 2), -f.h, f.w, f.h);
   ctx.restore();
 }
-
 // ---------- Bichinho (joaninha/besouro fofo 14x10) ----------
 const BUG_A = [
   '..K..K........', '...K..K.......', '..KKKKKKKKK...', '.KWKKRRRRRRK..',

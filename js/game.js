@@ -418,7 +418,7 @@ function loadStage(id) {
   enemies = cfg.enemies.map((e) => ({ ...e, y: GY - 10, w: 14, h: 10, dead: false, squash: 0 }));
   flowers = cfg.flowers.map((f) => ({ ...f, got: false }));
   particles = []; popups = [];
-  player = { x: 70, y: GY - 19, w: 12, h: 19, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null };
+  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null };
   camX = 0;
   st = { frames: 0, score: 0, lanterns: 0, enemies: 0, flowers: 0 };
   cfg.maxBase = lanterns.length * (cfg.golden ? 500 : 300) + enemies.length * 400 + flowers.length * 50;
@@ -701,7 +701,7 @@ function update() {
   // Flores de sakura
   for (const f of flowers) {
     if (f.got) continue;
-    if (Math.abs(player.x + 6 - f.x) < 9 && Math.abs(player.y + 10 - f.y) < 12) {
+    if (Math.abs(player.x + 7 - f.x) < 10 && Math.abs(player.y + 13 - f.y) < 15) {
       f.got = true; sakuraCount++; st.flowers++;
       addScore(50, f.x, f.y - 6, '#fbcfe8');
       Audio8.sfx.coin();
@@ -1061,7 +1061,7 @@ function drawPlayer() {
     // Parado: um único quadro estável + respiração suave de 1px (sem trocar de quadro = sem bug visual)
     yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;
   }
-  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, 26, yOffset);
+  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset);
 }
 
 function drawWorld() {
