@@ -419,7 +419,7 @@ function loadStage(id) {
   enemies = cfg.enemies.map((e) => ({ ...e, y: GY - 10, w: 14, h: 10, dead: false, squash: 0 }));
   flowers = cfg.flowers.map((f) => ({ ...f, got: false }));
   particles = []; popups = [];
-  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null, dropTimer: 0, walkDist: 0 };
+  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null, dropTimer: 0, walkDist: 0, sx: 1, sy: 1, stepTick: 0 };
   camX = 0;
   st = { frames: 0, score: 0, lanterns: 0, enemies: 0, flowers: 0 };
   cfg.maxBase = lanterns.length * (cfg.golden ? 500 : 300) + enemies.length * 400 + flowers.length * 50;
@@ -670,6 +670,9 @@ function update() {
   coyote = player.onGround ? 6 : Math.max(0, coyote - 1);
   if (jumpBuffer > 0 && coyote > 0) {
     player.vy = JUMP; player.onGround = false; coyote = 0; jumpBuffer = 0; player.standOn = null;
+    // Stretch elastico ao pular + poeirinha nos pes (estilo Celeste/Mario)
+    player.sx = 0.86; player.sy = 1.15;
+    burst(player.x + player.w / 2, player.y + player.h - 1, 4, ['#ffffff', '#e2e8f0'], 0.7);
     Audio8.sfx.jump();
   }
   if (!jumpNow && player.vy < JUMP_CUT) player.vy = JUMP_CUT;
@@ -685,6 +688,7 @@ function update() {
 
   const prevBottom = player.y + player.h, prevTop = player.y;
   const wasOn = player.standOn;
+  const wasOnGround = player.onGround;
   if (wasOn) player.x += wasOn.dx;
   player.x += player.vx;
   player.x = Math.max(0, Math.min(cfg.width - player.w, player.x));
@@ -706,11 +710,31 @@ function update() {
     }
   }
 
-  // Acumula distancia caminhada para sincronizar os passos com o deslocamento real no chao
+  // Squash elastico ao aterrissar + recuperacao suave para (1, 1)
+  if (!wasOnGround && player.onGround) {
+    player.sx = 1.16; player.sy = 0.84;
+    burst(player.x + player.w / 2, player.y + player.h - 1, 4, ['#ffffff', '#e2e8f0'], 0.6);
+  }
+  player.sx += (1 - player.sx) * 0.22;
+  player.sy += (1 - player.sy) * 0.22;
+
+  // Acumula distancia caminhada e solta poeirinha a cada passada no chao (estilo Mario/Celeste)
   if (player.onGround && Math.abs(player.vx) > 0.15) {
     player.walkDist += Math.abs(player.vx);
+    const curStep = Math.floor(player.walkDist / 13);
+    if (curStep > player.stepTick) {
+      player.stepTick = curStep;
+      particles.push({
+        x: player.x + player.w / 2 - player.facing * 4,
+        y: player.y + player.h - 1,
+        vx: -player.facing * (0.25 + Math.random() * 0.25),
+        vy: -0.25 - Math.random() * 0.2,
+        life: 16, max: 16, c: 'rgba(255,255,255,0.85)', s: 2, up: false,
+      });
+    }
   } else if (player.onGround) {
     player.walkDist = 0;
+    player.stepTick = 0;
   }
 
   // Lanternas: bater a cabeça acende!
@@ -1064,6 +1088,7 @@ function drawPlayer() {
   let anim = 'idle';
   let idx = 0;
   let yOffset = 0;
+  let tilt = 0;
   if (player.inv > 65) {
     anim = 'hurt';
   } else if (!player.onGround) {
@@ -1073,16 +1098,19 @@ function drawPlayer() {
     } else {
       anim = 'fall';
     }
+    tilt = player.vx * 0.03;
   } else if (Math.abs(player.vx) > 0.15) {
-    anim = Math.abs(player.vx) > 1.35 ? 'run' : 'walk';
-    // Passo sincronizado com a distancia real caminhada + leve balanço vertical natural
-    idx = Math.floor(player.walkDist / 6) % 4;
-    if (idx === 1 || idx === 3) yOffset = -1;
+    const running = Math.abs(player.vx) > 1.2;
+    anim = running ? 'run' : 'walk';
+    // Ritmo elastico de plataforma 2D (quique suave + leve inclinacao para frente)
+    const phase = player.walkDist * 0.28;
+    idx = Math.floor(player.walkDist / (running ? 7 : 6));
+    yOffset = -Math.abs(Math.sin(phase)) * (running ? 1.8 : 1.1);
+    tilt = player.vx * 0.045;
   } else {
-    // Parado: um único quadro estável + respiração suave de 1px (sem trocar de quadro = sem bug visual)
     yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;
   }
-  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset);
+  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset, player.sx, player.sy, tilt);
 }
 
 function drawWorld() {
