@@ -15,18 +15,18 @@ charSheetImg.src = 'assets/char-sheet.png?v=16';
 const CHAR_ANIMS = {
   male: {
     idle: [{ x: 19, y: 430, w: 54, h: 87 }],
-    // Ciclo natural de caminhada/corrida usando os quadros originais (passo -> passagem -> passada aberta -> passagem)
+    // 4 tempos reais: Passo 1 -> Passagem -> Passo 2 (pernas invertidas) -> Passagem
     walk: [
       { x: 208, y: 432, w: 50, h: 86 },
       { x: 264, y: 432, w: 48, h: 86 },
-      { x: 399, y: 432, w: 60, h: 85 },
-      { x: 317, y: 432, w: 49, h: 86 },
+      { x: 208, y: 432, w: 50, h: 86, swapLegs: true },
+      { x: 264, y: 432, w: 48, h: 86 },
     ],
     run: [
       { x: 399, y: 432, w: 60, h: 85 },
       { x: 264, y: 432, w: 48, h: 86 },
-      { x: 479, y: 432, w: 59, h: 83 },
-      { x: 317, y: 432, w: 49, h: 86 },
+      { x: 399, y: 432, w: 60, h: 85, swapLegs: true },
+      { x: 264, y: 432, w: 48, h: 86 },
     ],
     jump: [
       { x: 567, y: 428, w: 50, h: 84 },
@@ -40,14 +40,14 @@ const CHAR_ANIMS = {
     walk: [
       { x: 198, y: 101, w: 53, h: 81 },
       { x: 252, y: 101, w: 51, h: 81 },
-      { x: 434, y: 101, w: 49, h: 77 },
-      { x: 302, y: 101, w: 52, h: 81 },
+      { x: 198, y: 101, w: 53, h: 81, swapLegs: true },
+      { x: 252, y: 101, w: 51, h: 81 },
     ],
     run: [
       { x: 375, y: 101, w: 59, h: 77 },
-      { x: 434, y: 101, w: 49, h: 77 },
-      { x: 483, y: 100, w: 50, h: 78 },
-      { x: 434, y: 101, w: 49, h: 77 },
+      { x: 252, y: 101, w: 51, h: 81 },
+      { x: 375, y: 101, w: 59, h: 77, swapLegs: true },
+      { x: 252, y: 101, w: 51, h: 81 },
     ],
     jump: [{ x: 552, y: 95, w: 65, h: 85 }],
     fall: [{ x: 646, y: 99, w: 62, h: 82 }],
@@ -71,7 +71,22 @@ function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flip
   ctx.imageSmoothingQuality = 'high';
   ctx.translate(Math.round(centerX), Math.round(bottomY + yOffset));
   if (flipX) ctx.scale(-1, 1);
-  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -dw / 2, -dh, dw, dh);
+
+  if (f.swapLegs) {
+    // Desenha tronco/cabeca normais e espelha apenas a faixa das pernas para alternar os dois pes pra frente e pra tras!
+    const splitRatio = charKey === 'female' ? 0.78 : 0.74;
+    const srcTopH = Math.round(f.h * splitRatio);
+    const srcBotH = f.h - srcTopH;
+    const dstTopH = dh * splitRatio;
+    const dstBotH = dh - dstTopH;
+    ctx.drawImage(charSheetImg, f.x, f.y, f.w, srcTopH, -dw / 2, -dh, dw, dstTopH);
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(charSheetImg, f.x, f.y + srcTopH, f.w, srcBotH, -dw / 2, -dstBotH, dw, dstBotH);
+    ctx.restore();
+  } else {
+    ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -dw / 2, -dh, dw, dh);
+  }
   ctx.restore();
 }
 // ---------- Bichinho (joaninha/besouro fofo 14x10) ----------
