@@ -419,7 +419,7 @@ function loadStage(id) {
   enemies = cfg.enemies.map((e) => ({ ...e, y: GY - 10, w: 14, h: 10, dead: false, squash: 0 }));
   flowers = cfg.flowers.map((f) => ({ ...f, got: false }));
   particles = []; popups = [];
-  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null, dropTimer: 0, walkIdx: 0, walkTimer: 0, sx: 1, sy: 1, tilt: 0 };
+  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null, dropTimer: 0, walkDist: 0, stepTick: 0, walkIdx: 0, walkTimer: 0, sx: 1, sy: 1, tilt: 0 };
   camX = 0;
   st = { frames: 0, score: 0, lanterns: 0, enemies: 0, flowers: 0 };
   cfg.maxBase = lanterns.length * (cfg.golden ? 500 : 300) + enemies.length * 400 + flowers.length * 50;
@@ -720,28 +720,45 @@ function update() {
   const targetTilt = player.onGround ? player.vx * 0.035 : player.vx * 0.025;
   player.tilt += (targetTilt - player.tilt) * 0.2;
 
-  // Ciclo de caminhada a ~8.5 FPS com duracao variavel (hold no Contact, passagem mais rapida)
+  // Animacao de caminhada: masculino usa ciclo anterior (walk/run por distancia); feminino usa ~8.5 FPS com timing variavel
   if (player.onGround && Math.abs(player.vx) > 0.15) {
-    const walkList = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.male).walk;
-    const curFrame = walkList[player.walkIdx % walkList.length];
-    // Velocidade de avanco proporcional ao deslocamento real (~7 frames base por passo = ~8.5 FPS)
-    const speedFactor = Math.max(0.45, Math.abs(player.vx) / SPEED);
-    player.walkTimer += speedFactor;
-    if (player.walkTimer >= 7.2 * (curFrame.dur || 1)) {
-      player.walkTimer = 0;
-      player.walkIdx = (player.walkIdx + 1) % walkList.length;
-      const nextFrame = walkList[player.walkIdx];
-      if (nextFrame.step) {
+    if (selectedCharacter === 'male') {
+      player.walkDist += Math.abs(player.vx);
+      const curStep = Math.floor(player.walkDist / 13);
+      if (curStep > player.stepTick) {
+        player.stepTick = curStep;
         particles.push({
           x: player.x + player.w / 2 - player.facing * 4,
           y: player.y + player.h - 1,
-          vx: -player.facing * (0.2 + Math.random() * 0.22),
-          vy: -0.22 - Math.random() * 0.18,
-          life: 16, max: 16, c: 'rgba(255,255,255,0.82)', s: 2, up: false,
+          vx: -player.facing * (0.25 + Math.random() * 0.25),
+          vy: -0.25 - Math.random() * 0.2,
+          life: 16, max: 16, c: 'rgba(255,255,255,0.85)', s: 2, up: false,
         });
+      }
+    } else {
+      const walkList = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.female).walk;
+      const curFrame = walkList[player.walkIdx % walkList.length];
+      // Velocidade de avanco proporcional ao deslocamento real (~7 frames base por passo = ~8.5 FPS)
+      const speedFactor = Math.max(0.45, Math.abs(player.vx) / SPEED);
+      player.walkTimer += speedFactor;
+      if (player.walkTimer >= 7.2 * (curFrame.dur || 1)) {
+        player.walkTimer = 0;
+        player.walkIdx = (player.walkIdx + 1) % walkList.length;
+        const nextFrame = walkList[player.walkIdx];
+        if (nextFrame.step) {
+          particles.push({
+            x: player.x + player.w / 2 - player.facing * 4,
+            y: player.y + player.h - 1,
+            vx: -player.facing * (0.2 + Math.random() * 0.22),
+            vy: -0.22 - Math.random() * 0.18,
+            life: 16, max: 16, c: 'rgba(255,255,255,0.82)', s: 2, up: false,
+          });
+        }
       }
     }
   } else if (player.onGround) {
+    player.walkDist = 0;
+    player.stepTick = 0;
     player.walkIdx = 0;
     player.walkTimer = 0;
   }
@@ -1099,6 +1116,7 @@ function drawPlayer() {
   let yOffset = 0;
   let sx = player.sx;
   let sy = player.sy;
+  let tilt = selectedCharacter === 'male' ? 0 : player.tilt;
   if (player.inv > 65) {
     anim = 'hurt';
   } else if (!player.onGround) {
@@ -1108,17 +1126,27 @@ function drawPlayer() {
     } else {
       anim = 'fall';
     }
+    if (selectedCharacter === 'male') tilt = player.vx * 0.03;
   } else if (Math.abs(player.vx) > 0.15) {
-    anim = 'walk';
-    idx = player.walkIdx;
-    const f = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.male).walk[idx % 4];
-    yOffset = f.bob || 0;
-    sx *= (f.sx || 1);
-    sy *= (f.sy || 1);
+    if (selectedCharacter === 'male') {
+      const running = Math.abs(player.vx) > 1.2;
+      anim = running ? 'run' : 'walk';
+      const phase = player.walkDist * 0.28;
+      idx = Math.floor(player.walkDist / (running ? 7 : 6));
+      yOffset = -Math.abs(Math.sin(phase)) * (running ? 1.8 : 1.1);
+      tilt = player.vx * 0.045;
+    } else {
+      anim = 'walk';
+      idx = player.walkIdx;
+      const f = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.female).walk[idx % 4];
+      yOffset = f.bob || 0;
+      sx *= (f.sx || 1);
+      sy *= (f.sy || 1);
+    }
   } else {
     yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;
   }
-  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset, sx, sy, player.tilt);
+  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset, sx, sy, tilt);
 }
 
 function drawWorld() {
