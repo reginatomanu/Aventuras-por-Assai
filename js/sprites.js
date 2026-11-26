@@ -10,39 +10,34 @@ const PALETTE = {
 
 // ---------- Sprite Sheet Chibi Original (assets/char-sheet.png) ----------
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=16';
+charSheetImg.src = 'assets/char-sheet.png?v=21';
 
 const CHAR_ANIMS = {
+  // José (masculino)
   male: {
-    idle: [{ x: 19, y: 430, w: 54, h: 87 }],
+    idle: [{ x: 15, y: 401, w: 65, h: 107 }],
     walk: [
-      { x: 208, y: 432, w: 50, h: 86 },
-      { x: 264, y: 432, w: 48, h: 86 },
-      { x: 317, y: 432, w: 49, h: 86 },
-      { x: 264, y: 432, w: 48, h: 86 },
+      { x: 210, y: 404, w: 60, h: 108, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 275, y: 404, w: 59, h: 109, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 336, y: 405, w: 59, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 275, y: 404, w: 59, h: 109, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
     ],
-    run: [
-      { x: 399, y: 432, w: 60, h: 85 },
-      { x: 479, y: 432, w: 59, h: 83 },
-    ],
-    jump: [
-      { x: 567, y: 428, w: 50, h: 84 },
-      { x: 632, y: 428, w: 50, h: 83 },
-    ],
-    fall: [{ x: 702, y: 443, w: 58, h: 77 }],
-    hurt: [{ x: 21, y: 564, w: 55, h: 85 }],
+    jump: [{ x: 613, y: 403, w: 73, h: 103 }],
+    fall: [{ x: 704, y: 415, w: 68, h: 95 }],
+    hurt: [{ x: 16, y: 549, w: 72, h: 111 }],
   },
+  // Sakura (feminino)
   female: {
-    idle: [{ x: 15, y: 101, w: 61, h: 81 }],
+    idle: [{ x: 20, y: 74, w: 56, h: 97 }],
     walk: [
-      { x: 198, y: 101, w: 53, h: 81, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 252, y: 101, w: 51, h: 81, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
-      { x: 302, y: 101, w: 52, h: 81, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 252, y: 101, w: 51, h: 81, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 213, y: 75, w: 54, h: 96, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 75, w: 55, h: 96, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 333, y: 76, w: 58, h: 94, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 75, w: 55, h: 96, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
     ],
-    jump: [{ x: 552, y: 95, w: 65, h: 85 }],
-    fall: [{ x: 646, y: 99, w: 62, h: 82 }],
-    hurt: [{ x: 14, y: 229, w: 68, h: 81 }],
+    jump: [{ x: 610, y: 73, w: 70, h: 93 }],
+    fall: [{ x: 709, y: 78, w: 60, h: 93 }],
+    hurt: [{ x: 26, y: 214, w: 68, h: 102 }],
   },
 };
 
@@ -51,7 +46,8 @@ function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flip
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
-  const targetHeight = 27;
+  // José tem chapéu mais alto, então compensa a altura para ambos terem o mesmo porte de corpo
+  const targetHeight = charKey === 'male' ? 29.5 : 27;
   const scale = targetHeight / set.idle[0].h;
   const dw = f.w * scale;
   const dh = f.h * scale;

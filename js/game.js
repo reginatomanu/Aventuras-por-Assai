@@ -364,7 +364,7 @@ async function saveScore() {
   const name = (hostPlayer && hostPlayer.name) || $('player-name').value.trim() || t('player');
   const entry = {
     playerId: hostPlayer ? hostPlayer.id : null, name, score, stars: totalStars,
-    character: selectedCharacter === 'male' ? 'Sora' : 'Riku',
+    character: selectedCharacter === 'male' ? 'José' : 'Sakura',
     timeSeconds: Math.round(totalFrames / 60), won: state === 'won', date: new Date().toISOString(),
   };
   try { await rankingProvider.submit(entry); } catch (e) { /* falha silenciosa */ }
@@ -447,9 +447,9 @@ function startGame(withIntro = true) {
 }
 
 function showIntro() {
-  const isSora = selectedCharacter === 'male';
-  $('dialogue-speaker').textContent = isSora ? 'SORA' : 'RIKU';
-  $('dialogue-avatar-img').src = isSora ? 'assets/portrait-sora.png?v=12' : 'assets/portrait-riku.png?v=12';
+  const isJose = selectedCharacter === 'male';
+  $('dialogue-speaker').textContent = isJose ? 'JOSÉ' : 'SAKURA';
+  $('dialogue-avatar-img').src = isJose ? 'assets/portrait-jose.png?v=21' : 'assets/portrait-sakura.png?v=21';
   const full = t('dialogue_' + selectedCharacter);
   $('dialogue-text').textContent = '';
   $('dialogue-box').classList.remove('hidden');
@@ -549,7 +549,7 @@ function endGame(won) {
   updateMobileControls();
   Audio8.stopMusic();
   if (won) { Audio8.sfx.win(); if (!tookDamage) unlock('nohit'); } else Audio8.sfx.gameover();
-  const name = selectedCharacter === 'male' ? 'Sora' : 'Riku';
+  const name = selectedCharacter === 'male' ? 'José' : 'Sakura';
   $('end-title').textContent = won ? t('victory') : t('gameover');
   $('end-message').textContent = t(won ? 'end_win' : 'end_lose', { name });
   $('final-score-val').textContent = score;
@@ -720,45 +720,27 @@ function update() {
   const targetTilt = player.onGround ? player.vx * 0.035 : player.vx * 0.025;
   player.tilt += (targetTilt - player.tilt) * 0.2;
 
-  // Animacao de caminhada: masculino usa ciclo anterior (walk/run por distancia); feminino usa ~8.5 FPS com timing variavel
+  // Ciclo de caminhada a ~8.5 FPS com duracao variavel (hold no Contact, passagem mais rapida) para José e Sakura
   if (player.onGround && Math.abs(player.vx) > 0.15) {
-    if (selectedCharacter === 'male') {
-      player.walkDist += Math.abs(player.vx);
-      const curStep = Math.floor(player.walkDist / 13);
-      if (curStep > player.stepTick) {
-        player.stepTick = curStep;
+    const walkList = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.male).walk;
+    const curFrame = walkList[player.walkIdx % walkList.length];
+    const speedFactor = Math.max(0.45, Math.abs(player.vx) / SPEED);
+    player.walkTimer += speedFactor;
+    if (player.walkTimer >= 7.2 * (curFrame.dur || 1)) {
+      player.walkTimer = 0;
+      player.walkIdx = (player.walkIdx + 1) % walkList.length;
+      const nextFrame = walkList[player.walkIdx];
+      if (nextFrame.step) {
         particles.push({
           x: player.x + player.w / 2 - player.facing * 4,
           y: player.y + player.h - 1,
-          vx: -player.facing * (0.25 + Math.random() * 0.25),
-          vy: -0.25 - Math.random() * 0.2,
-          life: 16, max: 16, c: 'rgba(255,255,255,0.85)', s: 2, up: false,
+          vx: -player.facing * (0.2 + Math.random() * 0.22),
+          vy: -0.22 - Math.random() * 0.18,
+          life: 16, max: 16, c: 'rgba(255,255,255,0.82)', s: 2, up: false,
         });
-      }
-    } else {
-      const walkList = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.female).walk;
-      const curFrame = walkList[player.walkIdx % walkList.length];
-      // Velocidade de avanco proporcional ao deslocamento real (~7 frames base por passo = ~8.5 FPS)
-      const speedFactor = Math.max(0.45, Math.abs(player.vx) / SPEED);
-      player.walkTimer += speedFactor;
-      if (player.walkTimer >= 7.2 * (curFrame.dur || 1)) {
-        player.walkTimer = 0;
-        player.walkIdx = (player.walkIdx + 1) % walkList.length;
-        const nextFrame = walkList[player.walkIdx];
-        if (nextFrame.step) {
-          particles.push({
-            x: player.x + player.w / 2 - player.facing * 4,
-            y: player.y + player.h - 1,
-            vx: -player.facing * (0.2 + Math.random() * 0.22),
-            vy: -0.22 - Math.random() * 0.18,
-            life: 16, max: 16, c: 'rgba(255,255,255,0.82)', s: 2, up: false,
-          });
-        }
       }
     }
   } else if (player.onGround) {
-    player.walkDist = 0;
-    player.stepTick = 0;
     player.walkIdx = 0;
     player.walkTimer = 0;
   }
@@ -1116,7 +1098,6 @@ function drawPlayer() {
   let yOffset = 0;
   let sx = player.sx;
   let sy = player.sy;
-  let tilt = selectedCharacter === 'male' ? 0 : player.tilt;
   if (player.inv > 65) {
     anim = 'hurt';
   } else if (!player.onGround) {
@@ -1126,27 +1107,17 @@ function drawPlayer() {
     } else {
       anim = 'fall';
     }
-    if (selectedCharacter === 'male') tilt = player.vx * 0.03;
   } else if (Math.abs(player.vx) > 0.15) {
-    if (selectedCharacter === 'male') {
-      const running = Math.abs(player.vx) > 1.2;
-      anim = running ? 'run' : 'walk';
-      const phase = player.walkDist * 0.28;
-      idx = Math.floor(player.walkDist / (running ? 7 : 6));
-      yOffset = -Math.abs(Math.sin(phase)) * (running ? 1.8 : 1.1);
-      tilt = player.vx * 0.045;
-    } else {
-      anim = 'walk';
-      idx = player.walkIdx;
-      const f = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.female).walk[idx % 4];
-      yOffset = f.bob || 0;
-      sx *= (f.sx || 1);
-      sy *= (f.sy || 1);
-    }
+    anim = 'walk';
+    idx = player.walkIdx;
+    const f = (CHAR_ANIMS[selectedCharacter] || CHAR_ANIMS.male).walk[idx % 4];
+    yOffset = f.bob || 0;
+    sx *= (f.sx || 1);
+    sy *= (f.sy || 1);
   } else {
     yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;
   }
-  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset, sx, sy, tilt);
+  drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset, sx, sy, player.tilt);
 }
 
 function drawWorld() {

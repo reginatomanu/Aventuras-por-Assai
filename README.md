@@ -9,7 +9,7 @@ Um jogo de plataforma 2D em **Pixel Art** com densidade uniforme (384×216 nativ
 
 ## Recursos
 
-- **2 Personagens jogáveis:** **Sora** e **Riku**, com diálogo de abertura quebrando a 4ª parede.
+- **2 Personagens jogáveis:** **Sakura** e **José**, com diálogo de abertura quebrando a 4ª parede.
 - **3 Fases + 1 Fase Secreta:**
   1. **1-1 — Avenida dos Ipês (Dia):** cerejeiras, ipês brancos e amarelos, Toriis e cidade ao fundo com efeito paralaxe.
   2. **1-2 — Parque Ikeda (Entardecer):** laguinho com Torii iluminado, plataformas móveis e uma passagem escondida para a fase secreta (desbloqueada ao acender todas as lanternas).
