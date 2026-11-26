@@ -175,11 +175,37 @@ function normText(str) {
   return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
 }
 
-function pixelTextWidth(str) { return normText(str).length * 4 - 1; }
+function hasCJK(str) {
+  return /[\u3000-\u9fff\uff00-\uffef]/.test(String(str));
+}
+
+function pixelTextWidth(str) {
+  const s = String(str);
+  if (hasCJK(s)) {
+    let w = 0;
+    for (const ch of s) w += /[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 6 : 4;
+    return w;
+  }
+  return normText(s).length * 4 - 1;
+}
 
 function drawPixelText(ctx, str, x, y, color, shadow) {
-  const s = normText(str);
+  const raw = String(str);
   x = Math.round(x); y = Math.round(y);
+  if (hasCJK(raw)) {
+    ctx.save();
+    ctx.font = 'bold 6px "DotGothic16", "MS Gothic", sans-serif';
+    ctx.textBaseline = 'top';
+    if (shadow) {
+      ctx.fillStyle = shadow;
+      ctx.fillText(raw, x + 1, y);
+    }
+    ctx.fillStyle = color;
+    ctx.fillText(raw, x, y - 1);
+    ctx.restore();
+    return;
+  }
+  const s = normText(raw);
   const pass = (ox, oy, col) => {
     ctx.fillStyle = col;
     for (let i = 0; i < s.length; i++) {

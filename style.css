@@ -15,7 +15,7 @@ html, body { height: 100%; }
 body {
   background: radial-gradient(circle at center, #0b2550 0%, #020a1a 100%);
   color: #fff;
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'Press Start 2P', 'DotGothic16', monospace;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -77,7 +77,7 @@ body {
 
 .hidden { display: none !important; }
 
-button { font-family: 'Press Start 2P', monospace; cursor: pointer; }
+button { font-family: 'Press Start 2P', 'DotGothic16', monospace; cursor: pointer; }
 
 .lucide {
   width: 1.25em;
@@ -489,7 +489,7 @@ button { font-family: 'Press Start 2P', monospace; cursor: pointer; }
 
 .name-row { display: flex; gap: 1cqw; }
 .name-row input, .settings-grid select {
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'Press Start 2P', 'DotGothic16', monospace;
   font-size: max(8px, 1cqw);
   padding: 0.7cqw 1cqw;
   border: 0.2cqw solid var(--amarelo);
