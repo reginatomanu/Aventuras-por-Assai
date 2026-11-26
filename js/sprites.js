@@ -8,24 +8,70 @@ const PALETTE = {
   p: '#be185d', w: '#fbcfe8', G: '#22c55e', N: '#475569',
 };
 
-// ---------- Sprite Sheet Chibi (assets/char-sheet.png) ----------
+// ---------- Sprite Sheet Chibi Original (assets/char-sheet.png) ----------
 const charSheetImg = new Image();
+charSheetImg.src = 'assets/char-sheet.png?v=16';
 
-charSheetImg.src = 'assets/char-sheet-lo.png?v=14';
+const CHAR_ANIMS = {
+  male: {
+    idle: [{ x: 19, y: 430, w: 54, h: 87 }],
+    // Ciclo natural de caminhada/corrida usando os quadros originais (passo -> passagem -> passada aberta -> passagem)
+    walk: [
+      { x: 208, y: 432, w: 50, h: 86 },
+      { x: 264, y: 432, w: 48, h: 86 },
+      { x: 399, y: 432, w: 60, h: 85 },
+      { x: 317, y: 432, w: 49, h: 86 },
+    ],
+    run: [
+      { x: 399, y: 432, w: 60, h: 85 },
+      { x: 264, y: 432, w: 48, h: 86 },
+      { x: 479, y: 432, w: 59, h: 83 },
+      { x: 317, y: 432, w: 49, h: 86 },
+    ],
+    jump: [
+      { x: 567, y: 428, w: 50, h: 84 },
+      { x: 632, y: 428, w: 50, h: 83 },
+    ],
+    fall: [{ x: 702, y: 443, w: 58, h: 77 }],
+    hurt: [{ x: 21, y: 564, w: 55, h: 85 }],
+  },
+  female: {
+    idle: [{ x: 15, y: 101, w: 61, h: 81 }],
+    walk: [
+      { x: 198, y: 101, w: 53, h: 81 },
+      { x: 252, y: 101, w: 51, h: 81 },
+      { x: 434, y: 101, w: 49, h: 77 },
+      { x: 302, y: 101, w: 52, h: 81 },
+    ],
+    run: [
+      { x: 375, y: 101, w: 59, h: 77 },
+      { x: 434, y: 101, w: 49, h: 77 },
+      { x: 483, y: 100, w: 50, h: 78 },
+      { x: 434, y: 101, w: 49, h: 77 },
+    ],
+    jump: [{ x: 552, y: 95, w: 65, h: 85 }],
+    fall: [{ x: 646, y: 99, w: 62, h: 82 }],
+    hurt: [{ x: 14, y: 229, w: 68, h: 81 }],
+  },
+};
 
-// CHAR_ANIMS vem de assets/char-anims.js (sprite sheet reamostrada 3x, pixel art nitida)
-// Desenho em escala 1:1 (inteira) para manter os pixels perfeitos; base dos pes ancorada em bottomY.
 function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flipX = false, yOffset = 0) {
   if (!charSheetImg.complete || !charSheetImg.naturalWidth) return;
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
+  // Escala fixa por personagem baseada no idle original (preserva 100% dos detalhes sem deformar)
+  const targetHeight = 27;
+  const scale = targetHeight / set.idle[0].h;
+  const dw = f.w * scale;
+  const dh = f.h * scale;
 
   ctx.save();
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.translate(Math.round(centerX), Math.round(bottomY + yOffset));
   if (flipX) ctx.scale(-1, 1);
-  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -Math.round(f.w / 2), -f.h, f.w, f.h);
+  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -dw / 2, -dh, dw, dh);
   ctx.restore();
 }
 // ---------- Bichinho (joaninha/besouro fofo 14x10) ----------

@@ -1074,9 +1074,10 @@ function drawPlayer() {
       anim = 'fall';
     }
   } else if (Math.abs(player.vx) > 0.15) {
-    anim = 'walk';
-    // Passo sincronizado com a distancia real caminhada (sem patinar/arrastar!)
-    idx = Math.floor(player.walkDist / 5.5) % 4;
+    anim = Math.abs(player.vx) > 1.35 ? 'run' : 'walk';
+    // Passo sincronizado com a distancia real caminhada + leve balanço vertical natural
+    idx = Math.floor(player.walkDist / 6) % 4;
+    if (idx === 1 || idx === 3) yOffset = -1;
   } else {
     // Parado: um único quadro estável + respiração suave de 1px (sem trocar de quadro = sem bug visual)
     yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;
