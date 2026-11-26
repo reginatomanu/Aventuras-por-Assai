@@ -15,15 +15,12 @@ charSheetImg.src = 'assets/char-sheet.png?v=16';
 const CHAR_ANIMS = {
   male: {
     idle: [{ x: 19, y: 430, w: 54, h: 87 }],
+    // Ciclo coeso de 4 tempos (Contact -> Passing -> Stride -> Passing) com duracao variavel (weight/timing)
     walk: [
-      { x: 208, y: 432, w: 50, h: 86 },
-      { x: 264, y: 432, w: 48, h: 86 },
-      { x: 317, y: 432, w: 49, h: 86 },
-      { x: 264, y: 432, w: 48, h: 86 },
-    ],
-    run: [
-      { x: 399, y: 432, w: 60, h: 85 },
-      { x: 479, y: 432, w: 59, h: 83 },
+      { x: 208, y: 432, w: 50, h: 86, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 264, y: 432, w: 48, h: 86, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 317, y: 432, w: 49, h: 86, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 264, y: 432, w: 48, h: 86, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
     ],
     jump: [
       { x: 567, y: 428, w: 50, h: 84 },
@@ -35,16 +32,10 @@ const CHAR_ANIMS = {
   female: {
     idle: [{ x: 15, y: 101, w: 61, h: 81 }],
     walk: [
-      { x: 198, y: 101, w: 53, h: 81 },
-      { x: 252, y: 101, w: 51, h: 81 },
-      { x: 302, y: 101, w: 52, h: 81 },
-      { x: 252, y: 101, w: 51, h: 81 },
-    ],
-    run: [
-      { x: 375, y: 101, w: 59, h: 77 },
-      { x: 434, y: 101, w: 49, h: 77 },
-      { x: 483, y: 100, w: 50, h: 78 },
-      { x: 434, y: 101, w: 49, h: 77 },
+      { x: 198, y: 101, w: 53, h: 81, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 252, y: 101, w: 51, h: 81, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 302, y: 101, w: 52, h: 81, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 252, y: 101, w: 51, h: 81, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
     ],
     jump: [{ x: 552, y: 95, w: 65, h: 85 }],
     fall: [{ x: 646, y: 99, w: 62, h: 82 }],
