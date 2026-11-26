@@ -11,7 +11,7 @@ const PALETTE = {
 // ---------- Sprite Sheet Chibi (assets/char-sheet.png) ----------
 const charSheetImg = new Image();
 
-charSheetImg.src = 'assets/char-sheet-lo.png?v=13';
+charSheetImg.src = 'assets/char-sheet-lo.png?v=14';
 
 // CHAR_ANIMS vem de assets/char-anims.js (sprite sheet reamostrada 3x, pixel art nitida)
 // Desenho em escala 1:1 (inteira) para manter os pixels perfeitos; base dos pes ancorada em bottomY.

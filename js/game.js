@@ -153,7 +153,7 @@ function updateTouchControlSize() {
   const px = Math.round(Math.max(58, Math.min(180, baseW * factor)));
   const jumpPx = Math.round(px * 1.15);
   mc.style.setProperty('--ctrl-size', px + 'px');
-  [$('btn-left'), $('btn-right')].forEach((b) => {
+  [$('btn-left'), $('btn-right'), $('btn-down')].forEach((b) => {
     if (!b) return;
     b.style.width = px + 'px';
     b.style.height = px + 'px';
@@ -246,6 +246,7 @@ function bindTouch(btn, code) {
 bindTouch($('btn-left'), 'ArrowLeft');
 bindTouch($('btn-right'), 'ArrowRight');
 bindTouch($('btn-jump'), 'Space');
+if ($('btn-down')) bindTouch($('btn-down'), 'ArrowDown');
 
 // Desbloqueia áudio no primeiro toque/clique
 const unlockAudio = () => {
@@ -418,7 +419,7 @@ function loadStage(id) {
   enemies = cfg.enemies.map((e) => ({ ...e, y: GY - 10, w: 14, h: 10, dead: false, squash: 0 }));
   flowers = cfg.flowers.map((f) => ({ ...f, got: false }));
   particles = []; popups = [];
-  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null };
+  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null, dropTimer: 0, walkDist: 0 };
   camX = 0;
   st = { frames: 0, score: 0, lanterns: 0, enemies: 0, flowers: 0 };
   cfg.maxBase = lanterns.length * (cfg.golden ? 500 : 300) + enemies.length * 400 + flowers.length * 50;
@@ -645,7 +646,19 @@ function update() {
 
   // Entrada
   const left = keys.ArrowLeft || keys.KeyA, right = keys.ArrowRight || keys.KeyD;
+  const downNow = !!(keys.ArrowDown || keys.KeyS);
   const jumpNow = !!(keys.Space || keys.ArrowUp || keys.KeyW);
+
+  // Descer da plataforma ao apertar Seta para Baixo ou S
+  if (downNow && player.onGround && player.standOn) {
+    player.dropTimer = 14;
+    player.onGround = false;
+    player.standOn = null;
+    player.y += 2;
+    player.vy = 1.2;
+    coyote = 0;
+  }
+  if (player.dropTimer > 0) player.dropTimer--;
   if (jumpNow && !jumpHeld) jumpBuffer = 7;
   jumpHeld = jumpNow;
   if (jumpBuffer > 0) jumpBuffer--;
@@ -681,14 +694,23 @@ function update() {
 
   if (player.y + player.h >= GY) { player.y = GY - player.h; player.vy = 0; player.onGround = true; }
 
-  for (const p of platforms) {
-    const hOver = player.x + player.w > p.x + 1 && player.x < p.x + p.w - 1;
-    if (!hOver || player.vy < 0) continue;
-    const landed = prevBottom <= p.y - p.dy + 2 && player.y + player.h >= p.y;
-    const stuck = wasOn === p && player.y + player.h >= p.y - 3;
-    if (landed || stuck) {
-      player.y = p.y - player.h; player.vy = 0; player.onGround = true; player.standOn = p;
+  if (player.dropTimer === 0) {
+    for (const p of platforms) {
+      const hOver = player.x + player.w > p.x + 1 && player.x < p.x + p.w - 1;
+      if (!hOver || player.vy < 0) continue;
+      const landed = prevBottom <= p.y - p.dy + 2 && player.y + player.h >= p.y;
+      const stuck = wasOn === p && player.y + player.h >= p.y - 3;
+      if (landed || stuck) {
+        player.y = p.y - player.h; player.vy = 0; player.onGround = true; player.standOn = p;
+      }
     }
+  }
+
+  // Acumula distancia caminhada para sincronizar os passos com o deslocamento real no chao
+  if (player.onGround && Math.abs(player.vx) > 0.15) {
+    player.walkDist += Math.abs(player.vx);
+  } else if (player.onGround) {
+    player.walkDist = 0;
   }
 
   // Lanternas: bater a cabeça acende!
@@ -1051,12 +1073,10 @@ function drawPlayer() {
     } else {
       anim = 'fall';
     }
-  } else if (Math.abs(player.vx) > 1.45) {
-    anim = 'run';
-    idx = Math.floor(frame / 6);
-  } else if (Math.abs(player.vx) > 0.2) {
+  } else if (Math.abs(player.vx) > 0.15) {
     anim = 'walk';
-    idx = Math.floor(frame / 7);
+    // Passo sincronizado com a distancia real caminhada (sem patinar/arrastar!)
+    idx = Math.floor(player.walkDist / 5.5) % 4;
   } else {
     // Parado: um único quadro estável + respiração suave de 1px (sem trocar de quadro = sem bug visual)
     yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;

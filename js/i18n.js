@@ -3,7 +3,7 @@ const I18N = {
   pt: {
     start: 'INICIAR JOGO', ranking: 'RANKING', achievements: 'CONQUISTAS', settings: 'CONFIGURAÇÕES',
     pick_hint: 'TOQUE NO PERSONAGEM PARA ESCOLHER',
-    controls_hint: 'Setas / A D: mover · Cima / Espaço: pular · P: pausa',
+    controls_hint: 'Setas / A D: mover · Cima / Espaço: pular · Baixo / S: descer · P: pausa',
     dialogue_ok: 'BORA AJUDAR!',
     dialogue_male: 'Ei, você aí do outro lado da tela! Eu sou o Sora! Preciso atravessar Assaí até o Castelo Japonês. Acenda as lanternas, cuidado com os bichinhos... e dizem que existe uma fase secreta! Me ajuda?',
     dialogue_female: 'Oi, você aí olhando pra tela! Eu sou a Riku! Quero chegar ao Castelo Japonês de Assaí. Vamos acender todas as lanternas e encontrar a fase secreta juntos?',
@@ -37,7 +37,7 @@ const I18N = {
   en: {
     start: 'START GAME', ranking: 'RANKING', achievements: 'ACHIEVEMENTS', settings: 'SETTINGS',
     pick_hint: 'TAP A CHARACTER TO CHOOSE',
-    controls_hint: 'Arrows / A D: move · Up / Space: jump · P: pause',
+    controls_hint: 'Arrows / A D: move · Up / Space: jump · Down / S: drop · P: pause',
     dialogue_ok: "LET'S GO!",
     dialogue_male: "Hey, you on the other side of the screen! I'm Sora! I need to cross Assaí to reach the Japanese Castle. Light the lanterns, watch out for the bugs... and they say there's a secret stage! Will you help me?",
     dialogue_female: "Hi, you looking at the screen! I'm Riku! I want to reach the Japanese Castle of Assaí. Shall we light every lantern and find the secret stage together?",
@@ -71,7 +71,7 @@ const I18N = {
   es: {
     start: 'INICIAR JUEGO', ranking: 'RANKING', achievements: 'LOGROS', settings: 'AJUSTES',
     pick_hint: 'TOCA UN PERSONAJE PARA ELEGIR',
-    controls_hint: 'Flechas / A D: mover · Arriba / Espacio: saltar · P: pausa',
+    controls_hint: 'Flechas / A D: mover · Arriba / Espacio: saltar · Abajo / S: bajar · P: pausa',
     dialogue_ok: '¡VAMOS!',
     dialogue_male: '¡Oye, tú del otro lado de la pantalla! ¡Soy Sora! Necesito cruzar Assaí hasta el Castillo Japonés. Enciende los faroles, cuidado con los bichitos... ¡y dicen que hay una fase secreta! ¿Me ayudas?',
     dialogue_female: '¡Hola, tú que miras la pantalla! ¡Soy Riku! Quiero llegar al Castillo Japonés de Assaí. ¿Encendemos todos los faroles y buscamos la fase secreta juntos?',
