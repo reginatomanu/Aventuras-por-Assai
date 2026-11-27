@@ -449,7 +449,7 @@ function startGame(withIntro = true) {
 function showIntro() {
   const isJose = selectedCharacter === 'male';
   $('dialogue-speaker').textContent = isJose ? 'JOSÉ' : 'SAKURA';
-  $('dialogue-avatar-img').src = isJose ? 'assets/portrait-jose.png?v=30' : 'assets/portrait-sakura.png?v=30';
+  $('dialogue-avatar-img').src = isJose ? 'assets/portrait-jose.png?v=31' : 'assets/portrait-sakura.png?v=31';
   const full = t('dialogue_' + selectedCharacter);
   $('dialogue-text').textContent = '';
   $('dialogue-box').classList.remove('hidden');
