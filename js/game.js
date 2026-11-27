@@ -449,7 +449,7 @@ function startGame(withIntro = true) {
 function showIntro() {
   const isJose = selectedCharacter === 'male';
   $('dialogue-speaker').textContent = isJose ? 'JOSÉ' : 'SAKURA';
-  $('dialogue-avatar-img').src = isJose ? 'assets/portrait-jose.png?v=21' : 'assets/portrait-sakura.png?v=21';
+  $('dialogue-avatar-img').src = isJose ? 'assets/portrait-jose.png?v=23' : 'assets/portrait-sakura.png?v=23';
   const full = t('dialogue_' + selectedCharacter);
   $('dialogue-text').textContent = '';
   $('dialogue-box').classList.remove('hidden');
@@ -1115,7 +1115,8 @@ function drawPlayer() {
     sx *= (f.sx || 1);
     sy *= (f.sy || 1);
   } else {
-    yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 1;
+    idx = Math.floor(frame / 42);
+    yOffset = Math.floor(frame / 34) % 2 === 0 ? 0 : 0.75;
   }
   drawChibiFrame(ctx, selectedCharacter, anim, idx, player.x + player.w / 2, player.y + player.h + 1, player.facing < 0, yOffset, sx, sy, player.tilt);
 }
@@ -1265,7 +1266,7 @@ function drawMenu() {
 // ================= Loop =================
 function draw() {
   ctx.save();
-  ctx.scale(2, 2);
+  ctx.scale(4, 4);
   ctx.imageSmoothingEnabled = false;
   if (state === 'menu') drawMenu();
   else drawWorld();

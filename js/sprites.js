@@ -10,34 +10,37 @@ const PALETTE = {
 
 // ---------- Sprite Sheet Chibi Original (assets/char-sheet.png) ----------
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=22';
+charSheetImg.src = 'assets/char-sheet.png?v=23';
 
 const CHAR_ANIMS = {
   // José (masculino)
   male: {
-    idle: [{ x: 15, y: 401, w: 64, h: 107 }],
+    idle: [{ x: 14, y: 401, w: 65, h: 108 }],
     walk: [
-      { x: 210, y: 404, w: 60, h: 108, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 275, y: 404, w: 59, h: 109, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
-      { x: 336, y: 405, w: 59, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 275, y: 404, w: 59, h: 109, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 209, y: 405, w: 61, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 405, w: 60, h: 108, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 335, y: 405, w: 60, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 405, w: 60, h: 108, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
     ],
     jump: [{ x: 613, y: 403, w: 73, h: 103 }],
-    fall: [{ x: 704, y: 415, w: 68, h: 95 }],
+    fall: [{ x: 703, y: 414, w: 70, h: 97 }],
     hurt: [{ x: 16, y: 549, w: 72, h: 111 }],
   },
-  // Sakura (feminino)
+  // Sakura (feminino — idle usa quadros 2 e 3 com ambos os olhos 100% nítidos)
   female: {
-    idle: [{ x: 20, y: 74, w: 56, h: 97 }],
-    walk: [
-      { x: 213, y: 75, w: 54, h: 96, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 274, y: 75, w: 55, h: 96, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
-      { x: 333, y: 76, w: 58, h: 94, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 274, y: 75, w: 55, h: 96, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+    idle: [
+      { x: 83,  y: 75, w: 51, h: 95 },
+      { x: 141, y: 75, w: 51, h: 95 },
     ],
-    jump: [{ x: 610, y: 73, w: 70, h: 93 }],
-    fall: [{ x: 709, y: 78, w: 60, h: 93 }],
-    hurt: [{ x: 26, y: 214, w: 68, h: 102 }],
+    walk: [
+      { x: 213, y: 75, w: 53, h: 95, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 75, w: 53, h: 95, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 334, y: 76, w: 55, h: 94, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 75, w: 53, h: 95, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+    ],
+    jump: [{ x: 610, y: 73, w: 70, h: 92 }],
+    fall: [{ x: 709, y: 78, w: 59, h: 93 }],
+    hurt: [{ x: 27, y: 214, w: 67, h: 101 }],
   },
 };
 
@@ -46,7 +49,7 @@ function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flip
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
-  // José tem chapéu mais alto, então compensa a altura para ambos terem o mesmo porte de corpo
+  // Com canvas 1536x864 (4x), targetHeight ~27-29.5 renderiza os sprites ~95-108px na resolução 1:1 nativa!
   const targetHeight = charKey === 'male' ? 29.5 : 27;
   const scale = targetHeight / set.idle[0].h;
   const dw = f.w * scale;
@@ -55,7 +58,7 @@ function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flip
   ctx.save();
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.translate(Math.round(centerX), Math.round(bottomY + yOffset));
+  ctx.translate(Math.round(centerX * 4) / 4, Math.round((bottomY + yOffset) * 4) / 4);
   if (tilt) ctx.rotate(tilt);
   ctx.scale((flipX ? -1 : 1) * sx, sy);
   ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -dw / 2, -dh, dw, dh);
