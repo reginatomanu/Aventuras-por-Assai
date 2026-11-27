@@ -12,10 +12,10 @@ const PALETTE = {
 // Atlas gerado por tools/build_char_atlas.py a partir de assets/src/char-sheet-original.png:
 // recorte limpo, alfa binario e quadros ja no tamanho final (1 px do atlas = 1 px do canvas 1536x864).
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=27';
+charSheetImg.src = 'assets/char-sheet.png?v=28';
 // Conjunto separado do pulo: subida (jump), queda (fall) e aterrissagem (land).
 const charJumpImg = new Image();
-charJumpImg.src = 'assets/char-jump.png?v=27';
+charJumpImg.src = 'assets/char-jump.png?v=28';
 
 const CHAR_ANIMS = {
   // José
@@ -23,16 +23,16 @@ const CHAR_ANIMS = {
     idle: [{ x: 448, y: 8, w: 70, h: 118 }],
     walk: [{ x: 526, y: 8, w: 68, h: 118, dur: 1.25, bob: 0, step: true }, { x: 602, y: 8, w: 65, h: 119, dur: 0.80, bob: -1, step: false }, { x: 675, y: 8, w: 65, h: 117, dur: 1.25, bob: 0, step: true }, { x: 602, y: 8, w: 65, h: 119, dur: 0.80, bob: -1, step: false }],
     hurt: [{ x: 748, y: 8, w: 80, h: 122 }],
-    jump: [{ x: 253, y: 8, w: 80, h: 112, img: 'jump' }],
+    jump: [{ x: 253, y: 8, w: 80, h: 115, img: 'jump' }],
     fall: [{ x: 341, y: 8, w: 75, h: 105, img: 'jump' }],
     land: [{ x: 424, y: 8, w: 70, h: 81, img: 'jump' }],
   },
   // Sakura
   female: {
     idle: [{ x: 8, y: 8, w: 61, h: 109 }, { x: 77, y: 8, w: 61, h: 110 }],
-    walk: [{ x: 146, y: 8, w: 63, h: 110, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 110, dur: 0.80, bob: -1, step: false }, { x: 289, y: 8, w: 65, h: 109, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 110, dur: 0.80, bob: -1, step: false }],
+    walk: [{ x: 146, y: 8, w: 63, h: 110, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 111, dur: 0.80, bob: -1, step: false }, { x: 289, y: 8, w: 65, h: 109, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 111, dur: 0.80, bob: -1, step: false }],
     hurt: [{ x: 362, y: 8, w: 78, h: 117 }],
-    jump: [{ x: 8, y: 8, w: 79, h: 106, img: 'jump' }],
+    jump: [{ x: 8, y: 8, w: 79, h: 109, img: 'jump' }],
     fall: [{ x: 95, y: 8, w: 67, h: 106, img: 'jump' }],
     land: [{ x: 170, y: 8, w: 75, h: 72, img: 'jump' }],
   },

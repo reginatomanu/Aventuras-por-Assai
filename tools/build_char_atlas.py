@@ -145,7 +145,53 @@ def geodesic_assign(mask, seeds):
     return lab
 
 
-def extract_row(src, y0, y1, runs):
+def repair_top(cell, m, pan):
+    """Reconstroi o topo do personagem onde a etiqueta foi desenhada POR CIMA dele na sheet.
+
+    Nesses pontos o chapeu termina numa linha reta logo abaixo da etiqueta. O topo e
+    refeito seguindo a curva das laterais (parabola ajustada ao contorno vizinho),
+    pintado com a cor do proprio chapeu e fechado com o contorno escuro.
+    Altera cell e m no lugar; devolve quantas colunas foram reconstruidas."""
+    h, w = m.shape
+    cols = np.where(m.any(0))[0]
+    if not len(cols):
+        return 0
+    top = np.full(w, -1)
+    top[cols] = m[:, cols].argmax(0)
+    occl = [x for x in cols if top[x] > 0 and pan[max(0, top[x] - 4):top[x], x].any()]
+    if len(occl) < 5:
+        return 0
+    occl = np.array(occl)
+    flat = int(np.median(top[occl]))
+    lo, hi = occl.min(), occl.max()
+    side = [x for x in cols if (lo - 30 <= x < lo or hi < x <= hi + 30) and flat < top[x] < flat + 30]
+    if len(side) < 6:
+        return 0
+    a, b, c = np.polyfit(side, top[side], 2)
+    if a <= 0:
+        return 0
+    dark = cell[m & (cell[..., :3].max(-1) < 70)]
+    outline = np.median(dark[:, :3], 0).astype(np.uint8) if len(dark) else np.array([30, 20, 18], np.uint8)
+    new = np.zeros_like(m)
+    for x in range(lo, hi + 1):
+        ynew = int(round(a * x * x + b * x + c))
+        ynew = max(ynew, flat - 16, 0)
+        for y in range(ynew, flat + 1):
+            if m[y, x]:
+                continue
+            d = flat - y
+            sy = min(h - 1, flat + 3 + d % 4)
+            if m[sy, x]:
+                cell[y, x, :3] = cell[sy, x, :3]
+                cell[y, x, 3] = 255
+                new[y, x] = True
+    m |= new
+    ring = new & ~ndi.binary_erosion(m, iterations=2)
+    cell[ring, :3] = outline
+    return int(hi - lo + 1)
+
+
+def extract_row(src, y0, y1, runs, panel=None):
     """runs: lista de (nome, x0, x1, k) que dividem a mesma faixa horizontal."""
     band = src[y0:y1]
     mask = band[..., 3] >= 128
@@ -169,6 +215,10 @@ def extract_row(src, y0, y1, runs):
         cell = band.copy()
         cell[~own] = 0
         m = clean_mask(cell)
+        if panel is not None:
+            repaired = repair_top(cell, m, panel[y0:y1])
+            if repaired:
+                print(f'// topo reconstruido: {name}[{j}] ({repaired} colunas tampadas pela etiqueta)', file=sys.stderr)
         ys, xs = np.where(m)
         cy0, cy1, cx0, cx1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
         fr = cell[cy0:cy1, cx0:cx1].copy()
@@ -215,7 +265,7 @@ def remove_labels(src):
         panel |= ndi.binary_dilation(panel) & cold
     src = src.copy()
     src[panel] = 0
-    return src
+    return src, panel
 
 
 def pack(arrs):
@@ -239,7 +289,7 @@ def pack(arrs):
 
 
 def main():
-    src = remove_labels(np.array(Image.open(SRC).convert('RGBA')))
+    src, panel = remove_labels(np.array(Image.open(SRC).convert('RGBA')))
     packed = {k: [] for k in OUTS}
     anims = {}
     for ch, rows in ROWS.items():
@@ -248,7 +298,7 @@ def main():
             bands.setdefault((y0, y1), []).append((name, x0, x1, k))
         raw, touch = {}, {}
         for (y0, y1), runs in bands.items():
-            fr, t = extract_row(src, y0, y1, runs)
+            fr, t = extract_row(src, y0, y1, runs, panel)
             raw.update(fr)
             touch.update(t)
         bad = [f'{ch}.{run}[{i}]' for _, run, ids in USE[ch].values() for i in set(ids) if touch[run][i]]
