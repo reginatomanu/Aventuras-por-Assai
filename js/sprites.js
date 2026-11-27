@@ -10,12 +10,12 @@ const PALETTE = {
 
 // ---------- Sprite Sheet Chibi Original (assets/char-sheet.png) ----------
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=21';
+charSheetImg.src = 'assets/char-sheet.png?v=22';
 
 const CHAR_ANIMS = {
   // José (masculino)
   male: {
-    idle: [{ x: 15, y: 401, w: 65, h: 107 }],
+    idle: [{ x: 15, y: 401, w: 64, h: 107 }],
     walk: [
       { x: 210, y: 404, w: 60, h: 108, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
       { x: 275, y: 404, w: 59, h: 109, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
