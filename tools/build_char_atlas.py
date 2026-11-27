@@ -148,10 +148,11 @@ def geodesic_assign(mask, seeds):
 def repair_top(cell, m, pan):
     """Reconstroi o topo do personagem onde a etiqueta foi desenhada POR CIMA dele na sheet.
 
-    Nesses pontos o chapeu termina numa linha reta logo abaixo da etiqueta. O topo e
-    refeito seguindo a curva das laterais (parabola ajustada ao contorno vizinho),
-    pintado com a cor do proprio chapeu e fechado com o contorno escuro.
-    Altera cell e m no lugar; devolve quantas colunas foram reconstruidas."""
+    Nesses pontos o chapeu/cabeca termina numa linha reta logo abaixo da etiqueta.
+    O topo novo e uma curva suave (Hermite) que continua a inclinacao das laterais,
+    pintada com a cor lisa do proprio desenho (sem copiar detalhes como o sol),
+    com leve brilho em cima e contorno escuro de 2px. Altera cell e m no lugar;
+    devolve quantas colunas foram reconstruidas."""
     h, w = m.shape
     cols = np.where(m.any(0))[0]
     if not len(cols):
@@ -161,34 +162,48 @@ def repair_top(cell, m, pan):
     occl = [x for x in cols if top[x] > 0 and pan[max(0, top[x] - 4):top[x], x].any()]
     if len(occl) < 5:
         return 0
-    occl = np.array(occl)
-    flat = int(np.median(top[occl]))
-    lo, hi = occl.min(), occl.max()
-    side = [x for x in cols if (lo - 30 <= x < lo or hi < x <= hi + 30) and flat < top[x] < flat + 30]
-    if len(side) < 6:
-        return 0
-    a, b, c = np.polyfit(side, top[side], 2)
-    if a <= 0:
-        return 0
+    lo, hi = min(occl), max(occl)
+    flat = int(np.median(top[lo:hi + 1]))
+
+    def side_slope(xs):
+        xs = [x for x in xs if 0 <= x < w and top[x] >= 0 and top[x] < flat + 40]
+        if len(xs) < 3:
+            return None
+        return np.polyfit(xs, top[xs], 1)[0]
+
+    sl = side_slope(range(lo - 10, lo))
+    sr = side_slope(range(hi + 1, hi + 11))
+    # metade da inclinacao das laterais: domo largo e baixo, como o topo dos quadros intactos
+    sl = -0.5 if sl is None else 0.5 * float(np.clip(sl, -2.0, -0.35))
+    sr = 0.5 if sr is None else 0.5 * float(np.clip(sr, 0.35, 2.0))
+    span = hi - lo
+
+    # cor lisa: mediana do proprio desenho logo abaixo do topo, sem amarelo (sol) nem contorno
+    under = cell[flat + 3:flat + 14, lo:hi + 1].reshape(-1, 4)
+    rgb = under[:, :3].astype(int)
+    ok = (under[:, 3] > 0) & ~((rgb[:, 1] > 130) & (rgb[:, 0] > 180))  # tudo menos o amarelo do sol
+    base = np.median(rgb[ok], 0) if ok.any() else np.array([150, 60, 40])
     dark = cell[m & (cell[..., :3].max(-1) < 70)]
-    outline = np.median(dark[:, :3], 0).astype(np.uint8) if len(dark) else np.array([30, 20, 18], np.uint8)
+    outline = np.median(dark[:, :3], 0) if len(dark) else np.array([30, 20, 18])
+
     new = np.zeros_like(m)
+    ytop = {}
     for x in range(lo, hi + 1):
-        ynew = int(round(a * x * x + b * x + c))
-        ynew = max(ynew, flat - 16, 0)
-        for y in range(ynew, flat + 1):
-            if m[y, x]:
-                continue
-            d = flat - y
-            sy = min(h - 1, flat + 3 + d % 4)
-            if m[sy, x]:
-                cell[y, x, :3] = cell[sy, x, :3]
-                cell[y, x, 3] = 255
-                new[y, x] = True
+        t = (x - lo) / max(span, 1)
+        y = (2 * t ** 3 - 3 * t ** 2 + 1) * flat + (t ** 3 - 2 * t ** 2 + t) * sl * span             + (-2 * t ** 3 + 3 * t ** 2) * flat + (t ** 3 - t ** 2) * sr * span
+        ytop[x] = max(0, int(round(max(y, flat - 0.16 * span))))
+    # pinta da curva ate 2px abaixo da linha reta (cobre a franja azulada da etiqueta)
+    for x in range(lo, hi + 1):
+        for y in range(ytop[x], min(h, flat + 2)):
+            d = (y - ytop[x]) / max(flat + 2 - ytop[x], 1)
+            shade = 1.10 - 0.10 * d          # um pouco mais claro em cima (luz)
+            cell[y, x, :3] = np.clip(base * shade, 0, 255).astype(np.uint8)
+            cell[y, x, 3] = 255
+            new[y, x] = True
     m |= new
     ring = new & ~ndi.binary_erosion(m, iterations=2)
-    cell[ring, :3] = outline
-    return int(hi - lo + 1)
+    cell[ring, :3] = outline.astype(np.uint8)
+    return int(span + 1)
 
 
 def extract_row(src, y0, y1, runs, panel=None):
@@ -234,6 +249,10 @@ def downscale(rgba, s):
     arr = np.array(pm)
     # alfa a partir da mascara reduzida (sem franja)
     mask = np.array(Image.fromarray(rgba[..., 3]).resize((w, h), Image.BOX)) >= 128
+    # tira "espinhos": pixels da borda presos por no maximo 1 vizinho
+    for _ in range(2):
+        nb = sum(np.roll(np.roll(mask, dy, 0), dx, 1) for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        mask &= ~(mask & (nb <= 1))
     arr[..., 3] = np.where(mask, 255, 0)
     rgb = Image.fromarray(arr[..., :3]).filter(ImageFilter.UnsharpMask(radius=0.8, percent=60, threshold=2))
     arr[..., :3] = np.array(rgb)
