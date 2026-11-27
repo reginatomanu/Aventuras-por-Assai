@@ -8,42 +8,39 @@ const PALETTE = {
   p: '#be185d', w: '#fbcfe8', G: '#22c55e', N: '#475569',
 };
 
-// ---------- Sprite Atlas Limpo (assets/char-sheet.png) ----------
+// ---------- Sprite Sheet Chibi Original (assets/char-sheet.png) ----------
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=24';
+charSheetImg.src = 'assets/char-sheet.png?v=23';
 
 const CHAR_ANIMS = {
-  // José (masculino — extraído do PNG transparente nativo sem perda)
+  // José (masculino)
   male: {
-    idle: [
-      { x: 16,  y: 176, w: 63, h: 101 },
-      { x: 136, y: 176, w: 58, h: 101 },
-    ],
+    idle: [{ x: 14, y: 401, w: 65, h: 108 }],
     walk: [
-      { x: 256, y: 176, w: 57, h: 100, dur: 1.20, bob: 0,    sx: 1.03, sy: 0.97, step: true },
-      { x: 376, y: 176, w: 56, h: 98,  dur: 0.85, bob: -1.3, sx: 0.98, sy: 1.02, step: false },
-      { x: 496, y: 176, w: 54, h: 100, dur: 1.20, bob: 0,    sx: 1.03, sy: 0.97, step: true },
-      { x: 376, y: 176, w: 56, h: 98,  dur: 0.85, bob: -1.3, sx: 0.98, sy: 1.02, step: false },
+      { x: 209, y: 405, w: 61, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 405, w: 60, h: 108, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 335, y: 405, w: 60, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 405, w: 60, h: 108, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
     ],
-    jump: [{ x: 616, y: 176, w: 63, h: 103 }],
-    fall: [{ x: 736, y: 176, w: 66, h: 89 }],
-    hurt: [{ x: 856, y: 176, w: 71, h: 97 }],
+    jump: [{ x: 613, y: 403, w: 73, h: 103 }],
+    fall: [{ x: 703, y: 414, w: 70, h: 97 }],
+    hurt: [{ x: 16, y: 549, w: 72, h: 111 }],
   },
-  // Sakura (feminino — extraída da sheet dedicada de alta nitidez em células isoladas)
+  // Sakura (feminino — idle usa quadros 2 e 3 com ambos os olhos 100% nítidos)
   female: {
     idle: [
-      { x: 16,  y: 16, w: 66, h: 121 },
-      { x: 136, y: 16, w: 64, h: 119 },
+      { x: 83,  y: 75, w: 51, h: 95 },
+      { x: 141, y: 75, w: 51, h: 95 },
     ],
     walk: [
-      { x: 376, y: 16, w: 65, h: 118, dur: 1.20, bob: 0,    sx: 1.03, sy: 0.97, step: true },
-      { x: 496, y: 16, w: 64, h: 118, dur: 0.85, bob: -1.3, sx: 0.98, sy: 1.02, step: false },
-      { x: 616, y: 16, w: 63, h: 116, dur: 1.20, bob: 0,    sx: 1.03, sy: 0.97, step: true },
-      { x: 496, y: 16, w: 64, h: 118, dur: 0.85, bob: -1.3, sx: 0.98, sy: 1.02, step: false },
+      { x: 213, y: 75, w: 53, h: 95, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 75, w: 53, h: 95, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
+      { x: 334, y: 76, w: 55, h: 94, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
+      { x: 274, y: 75, w: 53, h: 95, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
     ],
-    jump: [{ x: 736, y: 16, w: 82, h: 115 }],
-    fall: [{ x: 856, y: 16, w: 86, h: 113 }],
-    hurt: [{ x: 976, y: 16, w: 78, h: 92 }],
+    jump: [{ x: 610, y: 73, w: 70, h: 92 }],
+    fall: [{ x: 709, y: 78, w: 59, h: 93 }],
+    hurt: [{ x: 27, y: 214, w: 67, h: 101 }],
   },
 };
 
@@ -52,8 +49,8 @@ function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flip
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
-  // Com canvas 1536x864 (4x), targetHeight ~28 renderiza ambos com nitidez 1:1 nativa!
-  const targetHeight = charKey === 'male' ? 28.5 : 28;
+  // Com canvas 1536x864 (4x), targetHeight ~27-29.5 renderiza os sprites ~95-108px na resolução 1:1 nativa!
+  const targetHeight = charKey === 'male' ? 29.5 : 27;
   const scale = targetHeight / set.idle[0].h;
   const dw = f.w * scale;
   const dh = f.h * scale;
