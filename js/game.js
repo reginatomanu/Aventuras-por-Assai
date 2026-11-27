@@ -419,7 +419,7 @@ function loadStage(id) {
   enemies = cfg.enemies.map((e) => ({ ...e, y: GY - 10, w: 14, h: 10, dead: false, squash: 0 }));
   flowers = cfg.flowers.map((f) => ({ ...f, got: false }));
   particles = []; popups = [];
-  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null, dropTimer: 0, walkDist: 0, stepTick: 0, walkIdx: 0, walkTimer: 0, sx: 1, sy: 1, tilt: 0 };
+  player = { x: 70, y: GY - 26, w: 14, h: 26, vx: 0, vy: 0, onGround: true, facing: 1, inv: 0, standOn: null, dropTimer: 0, walkDist: 0, stepTick: 0, walkIdx: 0, walkTimer: 0, landTimer: 0, sx: 1, sy: 1, tilt: 0 };
   camX = 0;
   st = { frames: 0, score: 0, lanterns: 0, enemies: 0, flowers: 0 };
   cfg.maxBase = lanterns.length * (cfg.golden ? 500 : 300) + enemies.length * 400 + flowers.length * 50;
@@ -670,8 +670,8 @@ function update() {
   coyote = player.onGround ? 6 : Math.max(0, coyote - 1);
   if (jumpBuffer > 0 && coyote > 0) {
     player.vy = JUMP; player.onGround = false; coyote = 0; jumpBuffer = 0; player.standOn = null;
-    // Stretch elastico ao pular + poeirinha nos pes (estilo Celeste/Mario)
-    player.sx = 0.86; player.sy = 1.15;
+    // Poeirinha nos pes; a pose de pulo vem do conjunto de sprites do pulo (sem deformar o desenho)
+    player.landTimer = 0;
     burst(player.x + player.w / 2, player.y + player.h - 1, 4, ['#ffffff', '#e2e8f0'], 0.7);
     Audio8.sfx.jump();
   }
@@ -710,9 +710,10 @@ function update() {
     }
   }
 
-  // Squash elastico ao aterrissar + recuperacao suave para (1, 1) e inclinacao interpolada
+  // Aterrissagem: alguns quadros agachado (sprite 'land') + poeirinha
+  if (player.landTimer > 0) player.landTimer--;
   if (!wasOnGround && player.onGround) {
-    player.sx = 1.16; player.sy = 0.84;
+    player.landTimer = 8;
     burst(player.x + player.w / 2, player.y + player.h - 1, 4, ['#ffffff', '#e2e8f0'], 0.6);
   }
   player.sx += (1 - player.sx) * 0.22;
@@ -1101,12 +1102,9 @@ function drawPlayer() {
   if (player.inv > 65) {
     anim = 'hurt';
   } else if (!player.onGround) {
-    if (player.vy < 0) {
-      anim = 'jump';
-      idx = Math.floor(frame / 10);
-    } else {
-      anim = 'fall';
-    }
+    anim = player.vy < 0 ? 'jump' : 'fall';
+  } else if (player.landTimer > 0) {
+    anim = 'land';
   } else if (Math.abs(player.vx) > 0.15) {
     anim = 'walk';
     idx = player.walkIdx;

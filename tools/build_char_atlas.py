@@ -9,7 +9,7 @@ O que faz para cada quadro:
   5. alfa binario (0/255) + contorno escuro de 1px -> borda nitida, sem franja.
 
 Uso:  python tools/build_char_atlas.py
-Saida: assets/char-sheet.png e o bloco CHAR_ANIMS impresso (colar em js/sprites.js).
+Saida: assets/char-sheet.png, assets/char-jump.png e o bloco CHAR_ANIMS impresso (colar em js/sprites.js).
 """
 import json
 import os
@@ -22,7 +22,10 @@ from scipy import ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'assets', 'src', 'char-sheet-original.png')
-OUT = os.path.join(ROOT, 'assets', 'char-sheet.png')
+OUTS = {
+    'main': os.path.join(ROOT, 'assets', 'char-sheet.png'),  # parado, andando, dano
+    'jump': os.path.join(ROOT, 'assets', 'char-jump.png'),   # conjunto separado do pulo
+}
 
 # Altura (em pixels do canvas 1536x864) do quadro idle de cada personagem.
 TARGET_IDLE_H = {'male': 118, 'female': 110}
@@ -57,8 +60,23 @@ WALK_META = [
 # Regra: so usar quadros que NAO encostam em nenhum vizinho na sheet original.
 # (Os idle 1 e 2 do José se sobrepoem na aba do chapeu: a parte de baixo nao existe na imagem.)
 USE = {
-    'male':   {'idle': [0], 'walk': [0, 1, 2, 1], 'jump': [0], 'fall': [0], 'hurt': [0]},
-    'female': {'idle': [1, 2], 'walk': [0, 1, 2, 1], 'jump': [0], 'fall': [0], 'hurt': [0]},
+    # anim: (arquivo, trecho da sheet original, quadros)
+    'male': {
+        'idle': ('main', 'idle', [0]),
+        'walk': ('main', 'walk', [0, 1, 2, 1]),
+        'hurt': ('main', 'hurt', [0]),
+        'jump': ('jump', 'jump', [0]),   # subindo
+        'fall': ('jump', 'fall', [0]),   # descendo
+        'land': ('jump', 'fall', [1]),   # aterrissagem (agachado)
+    },
+    'female': {
+        'idle': ('main', 'idle', [1, 2]),
+        'walk': ('main', 'walk', [0, 1, 2, 1]),
+        'hurt': ('main', 'hurt', [0]),
+        'jump': ('jump', 'jump', [0]),
+        'fall': ('jump', 'fall', [0]),
+        'land': ('jump', 'fall', [1]),
+    },
 }
 PAD = 8  # espaco entre quadros no atlas: cada um fica isolado na propria celula
 
@@ -178,24 +196,51 @@ def downscale(rgba, s):
 
 
 def remove_labels(src):
-    """Apaga as etiquetas azul-marinho (IDLE, WALK...) que encostam nos personagens."""
+    """Apaga as etiquetas azul-marinho (IDLE, WALK...) sem encostar no personagem.
+
+    So remove os pixels do proprio painel (e o texto dentro dele). A borda clarinha
+    do painel e apagada crescendo apenas sobre pixels "frios" (azulados/cinza):
+    pixels quentes (chapeu, pele, lenco) nunca sao apagados."""
     r, g, b = (src[..., i].astype(int) for i in range(3))
-    navy = (src[..., 3] >= 128) & (b > r + 25) & (b > g + 12) & (r < 110)
+    opaque = src[..., 3] >= 128
+    navy = opaque & (b > r + 25) & (b > g + 12) & (r < 110)
     lab, n = ndi.label(navy)
     panel = np.zeros_like(navy)
     for i, sl in enumerate(ndi.find_objects(lab)):
         h, w = sl[0].stop - sl[0].start, sl[1].stop - sl[1].start
         if w >= 40 and h >= 12:  # painel retangular, nao um detalhe azul do personagem
-            panel[sl] = True
-    panel = ndi.binary_dilation(panel, iterations=3)
+            panel[sl] |= ndi.binary_fill_holes(lab[sl] == i + 1)
+    cold = ~((r > b + 15) & (r > g + 5))
+    for _ in range(4):
+        panel |= ndi.binary_dilation(panel) & cold
     src = src.copy()
     src[panel] = 0
     return src
 
 
+def pack(arrs):
+    """Empacota em linhas de ate 1024px, cada quadro isolado com PAD de folga."""
+    x = y = PAD
+    row_h = 0
+    rects = []
+    for arr in arrs:
+        h, w = arr.shape[:2]
+        if x + w + PAD > 1024:
+            x, y = PAD, y + row_h + PAD
+            row_h = 0
+        rects.append((x, y, w, h))
+        x += w + PAD
+        row_h = max(row_h, h)
+    H = y + row_h + PAD
+    atlas = np.zeros((H, 1024, 4), np.uint8)
+    for (x, y, w, h), arr in zip(rects, arrs):
+        atlas[y:y + h, x:x + w] = arr
+    return atlas, rects
+
+
 def main():
     src = remove_labels(np.array(Image.open(SRC).convert('RGBA')))
-    packed = []  # (char, anim, idx, arr)
+    packed = {k: [] for k in OUTS}
     anims = {}
     for ch, rows in ROWS.items():
         bands = {}
@@ -206,36 +251,24 @@ def main():
             fr, t = extract_row(src, y0, y1, runs)
             raw.update(fr)
             touch.update(t)
-        bad = [f'{ch}.{n}[{i}]' for n, ids in USE[ch].items() for i in set(ids) if touch[n][i]]
+        bad = [f'{ch}.{run}[{i}]' for _, run, ids in USE[ch].values() for i in set(ids) if touch[run][i]]
         if bad:
             sys.exit('Quadros encostados em vizinhos (seriam cortados): ' + ', '.join(bad))
         s = TARGET_IDLE_H[ch] / raw['idle'][0].shape[0]
         anims[ch] = {}
-        for name, idxs in USE[ch].items():
-            anims[ch][name] = []
+        for name, (sheet, run, idxs) in USE[ch].items():
             cache = {}
-            for j, i in enumerate(idxs):
+            anims[ch][name] = []
+            for i in idxs:
                 if i not in cache:
-                    cache[i] = len(packed)
-                    packed.append(downscale(raw[name][i], s))
-                anims[ch][name].append(cache[i])
-    # empacota em linhas de ate 1024px
-    x = y = PAD
-    row_h = 0
-    rects = []
-    for arr in packed:
-        h, w = arr.shape[:2]
-        if x + w + PAD > 1024:
-            x, y = PAD, y + row_h + PAD
-            row_h = 0
-        rects.append((x, y, w, h))
-        x += w + PAD
-        row_h = max(row_h, h)
-    H = y + row_h + PAD
-    atlas = np.zeros((H, 1024, 4), np.uint8)
-    for (x, y, w, h), arr in zip(rects, packed):
-        atlas[y:y + h, x:x + w] = arr
-    Image.fromarray(atlas, 'RGBA').save(OUT, optimize=True)
+                    cache[i] = len(packed[sheet])
+                    packed[sheet].append(downscale(raw[run][i], s))
+                anims[ch][name].append((sheet, cache[i]))
+    rects = {}
+    for sheet, arrs in packed.items():
+        atlas, rects[sheet] = pack(arrs)
+        Image.fromarray(atlas, 'RGBA').save(OUTS[sheet], optimize=True)
+        print(f'// {os.path.basename(OUTS[sheet])}: 1024x{atlas.shape[0]}', file=sys.stderr)
 
     lines = ['const CHAR_ANIMS = {']
     for ch, label in (('male', 'José'), ('female', 'Sakura')):
@@ -243,18 +276,18 @@ def main():
         lines.append(f'  {ch}: {{')
         for name, ids in anims[ch].items():
             items = []
-            for j, pid in enumerate(ids):
-                x, y, w, h = rects[pid]
-                extra = ''
+            for j, (sheet, pid) in enumerate(ids):
+                x, y, w, h = rects[sheet][pid]
+                extra = f", img: '{sheet}'" if sheet != 'main' else ''
                 if name == 'walk':
                     m = WALK_META[j]
-                    extra = f", dur: {m['dur']:.2f}, bob: {m['bob']}, step: {json.dumps(m['step'])}"
+                    extra += f", dur: {m['dur']:.2f}, bob: {m['bob']}, step: {json.dumps(m['step'])}"
                 items.append(f'{{ x: {x}, y: {y}, w: {w}, h: {h}{extra} }}')
             lines.append(f'    {name}: [' + ', '.join(items) + '],')
         lines.append('  },')
     lines.append('};')
+    sys.stdout.reconfigure(encoding='utf-8')
     print('\n'.join(lines))
-    print(f'// atlas: 1024x{H}', file=sys.stderr)
 
 
 if __name__ == '__main__':

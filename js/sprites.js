@@ -12,32 +12,38 @@ const PALETTE = {
 // Atlas gerado por tools/build_char_atlas.py a partir de assets/src/char-sheet-original.png:
 // recorte limpo, alfa binario e quadros ja no tamanho final (1 px do atlas = 1 px do canvas 1536x864).
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=26';
+charSheetImg.src = 'assets/char-sheet.png?v=27';
+// Conjunto separado do pulo: subida (jump), queda (fall) e aterrissagem (land).
+const charJumpImg = new Image();
+charJumpImg.src = 'assets/char-jump.png?v=27';
 
 const CHAR_ANIMS = {
   // José
   male: {
-    idle: [{ x: 610, y: 8, w: 70, h: 118 }],
-    walk: [{ x: 688, y: 8, w: 68, h: 118, dur: 1.25, bob: 0, step: true }, { x: 764, y: 8, w: 65, h: 117, dur: 0.80, bob: -1, step: false }, { x: 837, y: 8, w: 65, h: 117, dur: 1.25, bob: 0, step: true }, { x: 764, y: 8, w: 65, h: 117, dur: 0.80, bob: -1, step: false }],
-    jump: [{ x: 910, y: 8, w: 80, h: 110 }],
-    fall: [{ x: 8, y: 134, w: 75, h: 105 }],
-    hurt: [{ x: 91, y: 134, w: 80, h: 122 }],
+    idle: [{ x: 448, y: 8, w: 70, h: 118 }],
+    walk: [{ x: 526, y: 8, w: 68, h: 118, dur: 1.25, bob: 0, step: true }, { x: 602, y: 8, w: 65, h: 119, dur: 0.80, bob: -1, step: false }, { x: 675, y: 8, w: 65, h: 117, dur: 1.25, bob: 0, step: true }, { x: 602, y: 8, w: 65, h: 119, dur: 0.80, bob: -1, step: false }],
+    hurt: [{ x: 748, y: 8, w: 80, h: 122 }],
+    jump: [{ x: 253, y: 8, w: 80, h: 112, img: 'jump' }],
+    fall: [{ x: 341, y: 8, w: 75, h: 105, img: 'jump' }],
+    land: [{ x: 424, y: 8, w: 70, h: 81, img: 'jump' }],
   },
   // Sakura
   female: {
     idle: [{ x: 8, y: 8, w: 61, h: 109 }, { x: 77, y: 8, w: 61, h: 110 }],
     walk: [{ x: 146, y: 8, w: 63, h: 110, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 110, dur: 0.80, bob: -1, step: false }, { x: 289, y: 8, w: 65, h: 109, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 110, dur: 0.80, bob: -1, step: false }],
-    jump: [{ x: 362, y: 8, w: 79, h: 106 }],
-    fall: [{ x: 449, y: 8, w: 67, h: 106 }],
-    hurt: [{ x: 524, y: 8, w: 78, h: 117 }],
+    hurt: [{ x: 362, y: 8, w: 78, h: 117 }],
+    jump: [{ x: 8, y: 8, w: 79, h: 106, img: 'jump' }],
+    fall: [{ x: 95, y: 8, w: 67, h: 106, img: 'jump' }],
+    land: [{ x: 170, y: 8, w: 75, h: 72, img: 'jump' }],
   },
 };
 
 function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flipX = false, yOffset = 0, sx = 1, sy = 1, tilt = 0) {
-  if (!charSheetImg.complete || !charSheetImg.naturalWidth) return;
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
+  const img = f.img === 'jump' ? charJumpImg : charSheetImg;
+  if (!img.complete || !img.naturalWidth) return;
   // ctx esta em escala 4x (mundo 384x216 -> canvas 1536x864): w/4 desenha o quadro 1:1, sem reamostrar.
   const dw = f.w / 4;
   const dh = f.h / 4;
@@ -59,7 +65,7 @@ function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flip
     ctx.imageSmoothingEnabled = false;
     if (flipX) ctx.scale(-1, 1);
   }
-  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, ox, -dh, dw, dh);
+  ctx.drawImage(img, f.x, f.y, f.w, f.h, ox, -dh, dw, dh);
   ctx.restore();
 }
 // ---------- Bichinho (joaninha/besouro fofo 14x10) ----------
