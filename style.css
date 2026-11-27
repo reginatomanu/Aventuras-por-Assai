@@ -325,28 +325,30 @@ button { font-family: 'Press Start 2P', 'DotGothic16', monospace; cursor: pointe
 .medallion-btn:hover { transform: scale(1.05); }
 
 .medallion-ring {
+  /* Moldura fina: o aro colorido do proprio avatar (laranja / rosa) e a borda principal;
+     por fora so o contorno azul-escuro e um filete dourado, como os botoes do jogo. */
   width: 12.6cqw;
   height: 12.6cqw;
   border-radius: 50%;
-  padding: 0.45cqw;
-  background: linear-gradient(145deg, var(--amarelo-claro), var(--amarelo) 60%, #b87900);
-  border: 0.32cqw solid var(--azul-escuro);
-  box-shadow: 0 0 0 0.22cqw var(--amarelo), 0 0.6cqw 1.6cqw rgba(0, 0, 0, 0.75);
+  padding: 0;
+  background: none;
+  border: 0.3cqw solid var(--azul-escuro);
+  box-shadow: 0 0 0 0.2cqw var(--amarelo), 0 0.6cqw 1.6cqw rgba(0, 0, 0, 0.75);
   opacity: 0.85;
   transition: all 0.2s;
 }
 .medallion-btn.selected .medallion-ring {
   opacity: 1;
   transform: scale(1.07);
-  box-shadow: 0 0 0 0.3cqw var(--amarelo-claro), 0 0 2.4cqw rgba(245, 179, 1, 0.95);
+  box-shadow: 0 0 0 0.25cqw var(--amarelo-claro), 0 0 2.4cqw rgba(245, 179, 1, 0.95);
 }
-/* Retratos ilustrados (tools/build_portraits.py): o circulo do avatar ocupa 1/1.19 da imagem;
-   a imagem e ampliada para o circulo encaixar no aro e o cabelo/chapeu passarem por cima dele. */
+/* Retratos (tools/build_portraits.py): o aro do avatar ocupa 1/1.19 da imagem; a imagem e
+   ampliada para esse aro encostar no contorno azul da moldura e o chapeu/cabelo passarem por cima. */
 .medallion-img {
   width: 119%; height: 119%; margin: -9.5%;
   display: block; object-fit: contain;
   image-rendering: auto;
-  filter: drop-shadow(0 0.25cqw 0.35cqw rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 0.2cqw 0.25cqw rgba(0, 0, 0, 0.4));
   pointer-events: none;
 }
 .medallion-name {
@@ -428,9 +430,10 @@ button { font-family: 'Press Start 2P', 'DotGothic16', monospace; cursor: pointe
   gap: 2.2cqw;
 }
 .dialogue-medallion {
-  width: 10cqw; height: 10cqw; flex-shrink: 0; border-radius: 50%; padding: 0.5cqw;
-  background: linear-gradient(145deg, var(--amarelo-claro), var(--amarelo), #8a6200);
+  width: 10cqw; height: 10cqw; flex-shrink: 0; border-radius: 50%; padding: 0;
+  background: none;
   border: 0.3cqw solid var(--azul-escuro);
+  box-shadow: 0 0 0 0.2cqw var(--amarelo);
 }
 .dialogue-content { display: flex; flex-direction: column; gap: 1cqw; flex: 1; }
 .dialogue-speaker {
