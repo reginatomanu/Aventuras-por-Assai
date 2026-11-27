@@ -340,7 +340,15 @@ button { font-family: 'Press Start 2P', 'DotGothic16', monospace; cursor: pointe
   transform: scale(1.07);
   box-shadow: 0 0 0 0.3cqw var(--amarelo-claro), 0 0 2.4cqw rgba(245, 179, 1, 0.95);
 }
-.medallion-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; image-rendering: pixelated; border: 0.25cqw solid var(--azul-escuro); display: block; }
+/* Retratos ilustrados (tools/build_portraits.py): o circulo do avatar ocupa 1/1.19 da imagem;
+   a imagem e ampliada para o circulo encaixar no aro e o cabelo/chapeu passarem por cima dele. */
+.medallion-img {
+  width: 119%; height: 119%; margin: -9.5%;
+  display: block; object-fit: contain;
+  image-rendering: auto;
+  filter: drop-shadow(0 0.25cqw 0.35cqw rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
 .medallion-name {
   background: linear-gradient(180deg, #1b3668 0%, #0f2042 100%);
   color: #e2e8f0;
