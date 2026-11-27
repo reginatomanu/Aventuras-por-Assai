@@ -8,39 +8,28 @@ const PALETTE = {
   p: '#be185d', w: '#fbcfe8', G: '#22c55e', N: '#475569',
 };
 
-// ---------- Sprite Sheet Chibi Original (assets/char-sheet.png) ----------
+// ---------- Sprite Sheet Chibi (assets/char-sheet.png) ----------
+// Atlas gerado por tools/build_char_atlas.py a partir de assets/src/char-sheet-original.png:
+// recorte limpo, alfa binario e quadros ja no tamanho final (1 px do atlas = 1 px do canvas 1536x864).
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=23';
+charSheetImg.src = 'assets/char-sheet.png?v=25';
 
 const CHAR_ANIMS = {
-  // José (masculino)
+  // José
   male: {
-    idle: [{ x: 14, y: 401, w: 65, h: 108 }],
-    walk: [
-      { x: 209, y: 405, w: 61, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 274, y: 405, w: 60, h: 108, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
-      { x: 335, y: 405, w: 60, h: 107, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 274, y: 405, w: 60, h: 108, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
-    ],
-    jump: [{ x: 613, y: 403, w: 73, h: 103 }],
-    fall: [{ x: 703, y: 414, w: 70, h: 97 }],
-    hurt: [{ x: 16, y: 549, w: 72, h: 111 }],
+    idle: [{ x: 574, y: 4, w: 70, h: 118 }, { x: 648, y: 4, w: 65, h: 117 }, { x: 717, y: 4, w: 65, h: 117 }],
+    walk: [{ x: 786, y: 4, w: 68, h: 118, dur: 1.25, bob: 0, step: true }, { x: 858, y: 4, w: 65, h: 117, dur: 0.80, bob: -1, step: false }, { x: 927, y: 4, w: 65, h: 117, dur: 1.25, bob: 0, step: true }, { x: 858, y: 4, w: 65, h: 117, dur: 0.80, bob: -1, step: false }],
+    jump: [{ x: 4, y: 126, w: 80, h: 110 }],
+    fall: [{ x: 88, y: 126, w: 75, h: 105 }],
+    hurt: [{ x: 167, y: 126, w: 80, h: 122 }],
   },
-  // Sakura (feminino — idle usa quadros 2 e 3 com ambos os olhos 100% nítidos)
+  // Sakura
   female: {
-    idle: [
-      { x: 83,  y: 75, w: 51, h: 95 },
-      { x: 141, y: 75, w: 51, h: 95 },
-    ],
-    walk: [
-      { x: 213, y: 75, w: 53, h: 95, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 274, y: 75, w: 53, h: 95, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
-      { x: 334, y: 76, w: 55, h: 94, dur: 1.25, bob: 0,    sx: 1.04, sy: 0.96, step: true },
-      { x: 274, y: 75, w: 53, h: 95, dur: 0.80, bob: -1.4, sx: 0.97, sy: 1.03, step: false },
-    ],
-    jump: [{ x: 610, y: 73, w: 70, h: 92 }],
-    fall: [{ x: 709, y: 78, w: 59, h: 93 }],
-    hurt: [{ x: 27, y: 214, w: 67, h: 101 }],
+    idle: [{ x: 4, y: 4, w: 61, h: 109 }, { x: 69, y: 4, w: 61, h: 110 }],
+    walk: [{ x: 134, y: 4, w: 63, h: 110, dur: 1.25, bob: 0, step: true }, { x: 201, y: 4, w: 64, h: 110, dur: 0.80, bob: -1, step: false }, { x: 269, y: 4, w: 65, h: 109, dur: 1.25, bob: 0, step: true }, { x: 201, y: 4, w: 64, h: 110, dur: 0.80, bob: -1, step: false }],
+    jump: [{ x: 338, y: 4, w: 79, h: 106 }],
+    fall: [{ x: 421, y: 4, w: 67, h: 106 }],
+    hurt: [{ x: 492, y: 4, w: 78, h: 117 }],
   },
 };
 
@@ -49,19 +38,28 @@ function drawChibiFrame(ctx, charKey, animName, frameIdx, centerX, bottomY, flip
   const set = CHAR_ANIMS[charKey] || CHAR_ANIMS.male;
   const list = set[animName] || set.idle;
   const f = list[frameIdx % list.length];
-  // Com canvas 1536x864 (4x), targetHeight ~27-29.5 renderiza os sprites ~95-108px na resolução 1:1 nativa!
-  const targetHeight = charKey === 'male' ? 29.5 : 27;
-  const scale = targetHeight / set.idle[0].h;
-  const dw = f.w * scale;
-  const dh = f.h * scale;
+  // ctx esta em escala 4x (mundo 384x216 -> canvas 1536x864): w/4 desenha o quadro 1:1, sem reamostrar.
+  const dw = f.w / 4;
+  const dh = f.h / 4;
+  const px = Math.round(centerX * 4) / 4;
+  const py = Math.round((bottomY + yOffset) * 4) / 4;
+  const ox = -Math.floor(f.w / 2) / 4;
+  const squash = Math.abs(sx - 1) > 0.03 || Math.abs(sy - 1) > 0.03;
 
   ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.translate(Math.round(centerX * 4) / 4, Math.round((bottomY + yOffset) * 4) / 4);
-  if (tilt) ctx.rotate(tilt);
-  ctx.scale((flipX ? -1 : 1) * sx, sy);
-  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, -dw / 2, -dh, dw, dh);
+  ctx.translate(px, py);
+  if (squash) {
+    // Pulo/aterrissagem: deformacao rapida (poucos quadros) -> suaviza so nesse instante.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    if (tilt) ctx.rotate(tilt);
+    ctx.scale((flipX ? -1 : 1) * sx, sy);
+  } else {
+    // Normal: pixel a pixel, nitido.
+    ctx.imageSmoothingEnabled = false;
+    if (flipX) ctx.scale(-1, 1);
+  }
+  ctx.drawImage(charSheetImg, f.x, f.y, f.w, f.h, ox, -dh, dw, dh);
   ctx.restore();
 }
 // ---------- Bichinho (joaninha/besouro fofo 14x10) ----------
