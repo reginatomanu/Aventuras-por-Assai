@@ -54,11 +54,13 @@ WALK_META = [
     dict(dur=1.25, bob=0, step=True),
     dict(dur=0.80, bob=-1, step=False),
 ]
+# Regra: so usar quadros que NAO encostam em nenhum vizinho na sheet original.
+# (Os idle 1 e 2 do José se sobrepoem na aba do chapeu: a parte de baixo nao existe na imagem.)
 USE = {
-    'male':   {'idle': [0, 1, 2], 'walk': [0, 1, 2, 1], 'jump': [0], 'fall': [0], 'hurt': [0]},
+    'male':   {'idle': [0], 'walk': [0, 1, 2, 1], 'jump': [0], 'fall': [0], 'hurt': [0]},
     'female': {'idle': [1, 2], 'walk': [0, 1, 2, 1], 'jump': [0], 'fall': [0], 'hurt': [0]},
 }
-PAD = 4
+PAD = 8  # espaco entre quadros no atlas: cada um fica isolado na propria celula
 
 
 def split_columns(alpha_band, k):
@@ -141,8 +143,11 @@ def extract_row(src, y0, y1, runs):
             owners.append((name, j))
     lab = geodesic_assign(mask, seeds)
     out = {name: [] for name, *_ in runs}
+    touches = {name: [] for name, *_ in runs}
     for sid, (name, j) in enumerate(owners, start=1):
         own = lab == sid
+        ring = ndi.binary_dilation(own, iterations=2) & ~own
+        touches[name].append(bool((ring & (lab > 0)).any()))
         cell = band.copy()
         cell[~own] = 0
         m = clean_mask(cell)
@@ -151,7 +156,7 @@ def extract_row(src, y0, y1, runs):
         fr = cell[cy0:cy1, cx0:cx1].copy()
         fr[..., 3] = np.where(m[cy0:cy1, cx0:cx1], 255, 0)
         out[name].append(fr)
-    return out
+    return out, touches
 
 
 def downscale(rgba, s):
@@ -196,9 +201,14 @@ def main():
         bands = {}
         for name, (y0, y1, x0, x1, k) in rows.items():
             bands.setdefault((y0, y1), []).append((name, x0, x1, k))
-        raw = {}
+        raw, touch = {}, {}
         for (y0, y1), runs in bands.items():
-            raw.update(extract_row(src, y0, y1, runs))
+            fr, t = extract_row(src, y0, y1, runs)
+            raw.update(fr)
+            touch.update(t)
+        bad = [f'{ch}.{n}[{i}]' for n, ids in USE[ch].items() for i in set(ids) if touch[n][i]]
+        if bad:
+            sys.exit('Quadros encostados em vizinhos (seriam cortados): ' + ', '.join(bad))
         s = TARGET_IDLE_H[ch] / raw['idle'][0].shape[0]
         anims[ch] = {}
         for name, idxs in USE[ch].items():

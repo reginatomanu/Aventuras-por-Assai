@@ -12,24 +12,24 @@ const PALETTE = {
 // Atlas gerado por tools/build_char_atlas.py a partir de assets/src/char-sheet-original.png:
 // recorte limpo, alfa binario e quadros ja no tamanho final (1 px do atlas = 1 px do canvas 1536x864).
 const charSheetImg = new Image();
-charSheetImg.src = 'assets/char-sheet.png?v=25';
+charSheetImg.src = 'assets/char-sheet.png?v=26';
 
 const CHAR_ANIMS = {
   // José
   male: {
-    idle: [{ x: 574, y: 4, w: 70, h: 118 }, { x: 648, y: 4, w: 65, h: 117 }, { x: 717, y: 4, w: 65, h: 117 }],
-    walk: [{ x: 786, y: 4, w: 68, h: 118, dur: 1.25, bob: 0, step: true }, { x: 858, y: 4, w: 65, h: 117, dur: 0.80, bob: -1, step: false }, { x: 927, y: 4, w: 65, h: 117, dur: 1.25, bob: 0, step: true }, { x: 858, y: 4, w: 65, h: 117, dur: 0.80, bob: -1, step: false }],
-    jump: [{ x: 4, y: 126, w: 80, h: 110 }],
-    fall: [{ x: 88, y: 126, w: 75, h: 105 }],
-    hurt: [{ x: 167, y: 126, w: 80, h: 122 }],
+    idle: [{ x: 610, y: 8, w: 70, h: 118 }],
+    walk: [{ x: 688, y: 8, w: 68, h: 118, dur: 1.25, bob: 0, step: true }, { x: 764, y: 8, w: 65, h: 117, dur: 0.80, bob: -1, step: false }, { x: 837, y: 8, w: 65, h: 117, dur: 1.25, bob: 0, step: true }, { x: 764, y: 8, w: 65, h: 117, dur: 0.80, bob: -1, step: false }],
+    jump: [{ x: 910, y: 8, w: 80, h: 110 }],
+    fall: [{ x: 8, y: 134, w: 75, h: 105 }],
+    hurt: [{ x: 91, y: 134, w: 80, h: 122 }],
   },
   // Sakura
   female: {
-    idle: [{ x: 4, y: 4, w: 61, h: 109 }, { x: 69, y: 4, w: 61, h: 110 }],
-    walk: [{ x: 134, y: 4, w: 63, h: 110, dur: 1.25, bob: 0, step: true }, { x: 201, y: 4, w: 64, h: 110, dur: 0.80, bob: -1, step: false }, { x: 269, y: 4, w: 65, h: 109, dur: 1.25, bob: 0, step: true }, { x: 201, y: 4, w: 64, h: 110, dur: 0.80, bob: -1, step: false }],
-    jump: [{ x: 338, y: 4, w: 79, h: 106 }],
-    fall: [{ x: 421, y: 4, w: 67, h: 106 }],
-    hurt: [{ x: 492, y: 4, w: 78, h: 117 }],
+    idle: [{ x: 8, y: 8, w: 61, h: 109 }, { x: 77, y: 8, w: 61, h: 110 }],
+    walk: [{ x: 146, y: 8, w: 63, h: 110, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 110, dur: 0.80, bob: -1, step: false }, { x: 289, y: 8, w: 65, h: 109, dur: 1.25, bob: 0, step: true }, { x: 217, y: 8, w: 64, h: 110, dur: 0.80, bob: -1, step: false }],
+    jump: [{ x: 362, y: 8, w: 79, h: 106 }],
+    fall: [{ x: 449, y: 8, w: 67, h: 106 }],
+    hurt: [{ x: 524, y: 8, w: 78, h: 117 }],
   },
 };
 
